@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dream Biology</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Space+Mono:wght@400&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#000;color:#fff;font-family:'Space Mono',monospace;overflow:hidden;}
+  .wrap{display:flex;width:100vw;height:100vh;align-items:center;justify-content:center;position:relative;}
+  canvas{display:block;}
+  .hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,.15);letter-spacing:.15em;}
+
+  /* Exhibition overlay */
+  .exhibit{position:absolute;top:28px;left:32px;max-width:300px;pointer-events:none;}
+  .ex-title{font-family:'EB Garamond',serif;font-style:italic;font-size:30px;color:rgba(255,255,255,.8);letter-spacing:.03em;line-height:1.1;}
+  .ex-sub{font-size:8px;letter-spacing:.22em;color:rgba(255,255,255,.25);text-transform:uppercase;margin:6px 0 22px;}
+  .ex-state .sn{font-family:'EB Garamond',serif;font-style:italic;font-size:15px;color:rgba(255,255,255,.65);margin-bottom:5px;}
+  .ex-state .sp{font-family:'EB Garamond',serif;font-style:italic;font-size:12px;color:rgba(255,255,255,.38);line-height:1.8;}
+  .ex-mem{margin-top:16px;font-size:8px;letter-spacing:.1em;color:rgba(255,255,255,.18);}
+
+  /* Mode toggle */
+  .mode-btn{position:fixed;bottom:20px;right:20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.3);font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.15em;padding:7px 14px;cursor:pointer;border-radius:2px;transition:all .25s;z-index:100;}
+  .mode-btn:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);}
+
+  /* Prototype panel */
+  .proto{position:fixed;top:0;right:0;bottom:0;width:290px;background:rgba(2,2,10,.92);border-left:1px solid rgba(255,255,255,.06);padding:22px 18px;overflow-y:auto;transform:translateX(100%);transition:transform .35s ease;z-index:50;}
+  .proto.open{transform:translateX(0);}
+  .proto-hd{font-size:8px;letter-spacing:.2em;color:rgba(255,255,255,.25);text-transform:uppercase;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:18px;}
+  .ctrl{margin-bottom:16px;}
+  .ct{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1px;}
+  .cn{font-family:'EB Garamond',serif;font-style:italic;font-size:15px;color:rgba(255,255,255,.78);}
+  .cv{font-size:9px;color:rgba(255,255,255,.3);}
+  .ch{font-size:7.5px;letter-spacing:.08em;color:rgba(255,255,255,.2);margin-bottom:5px;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:1px;background:rgba(255,255,255,.14);outline:none;border:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.55);cursor:pointer;}
+  .rc input::-webkit-slider-thumb{background:rgba(155,110,255,.85);}
+  .sc input::-webkit-slider-thumb{background:rgba(220,75,115,.8);}
+  .membox{margin:18px 0 14px;padding:14px 0 0;border-top:1px solid rgba(255,255,255,.06);}
+  .memtxt{font-size:8px;color:rgba(255,255,255,.25);line-height:1.7;margin-bottom:9px;}
+  .membtns{display:flex;gap:5px;flex-wrap:wrap;}
+  .membtn{background:none;border:1px solid rgba(255,255,255,.13);color:rgba(255,255,255,.4);font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.08em;padding:5px 9px;cursor:pointer;border-radius:1px;}
+  .membtn:hover{border-color:rgba(255,255,255,.38);color:rgba(255,255,255,.75);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="c" width="680" height="820"></canvas>
+  <div class="hint">drag to rotate</div>
+
+  <!-- Exhibition overlay -->
+  <div class="exhibit">
+    <div class="ex-title">Dream Biology</div>
+    <div class="ex-sub" id="ex-sub">last night's organism</div>
+    <div class="ex-state">
+      <div class="sn" id="sn">Bioluminescent Bloom</div>
+      <div class="sp" id="sp">dreaming inside the dream<br>organ light stable<br>something forming</div>
+    </div>
+    <div class="ex-mem" id="ex-mem"></div>
+  </div>
+</div>
+
+<!-- Prototype panel -->
+<div class="proto" id="proto">
+  <div class="proto-hd">prototype · parameters</div>
+  <div class="ctrl"><div class="ct"><span class="cn">deep sleep</span><span class="cv" id="dv">0.68</span></div><div class="ch">bell density · core glow</div><input type="range" min="0" max="1" step=".01" value=".68" id="d"></div>
+  <div class="ctrl rc"><div class="ct"><span class="cn">REM</span><span class="cv" id="rv">0.55</span></div><div class="ch">tentacle reach · light pulse speed</div><input type="range" min="0" max="1" step=".01" value=".55" id="r"></div>
+  <div class="ctrl sc"><div class="ct"><span class="cn">stress residue</span><span class="cv" id="sv">0.12</span></div><div class="ch">amber fracture · contraction</div><input type="range" min="0" max="1" step=".01" value=".12" id="s"></div>
+  <div class="ctrl"><div class="ct"><span class="cn">HRV</span><span class="cv" id="hv">0.65</span></div><div class="ch">rhythm quality · whole-body flow</div><input type="range" min="0" max="1" step=".01" value=".65" id="h"></div>
+  <div class="ctrl"><div class="ct"><span class="cn">body temperature</span><span class="cv" id="tv">0.50</span></div><div class="ch">local heat · warm↔cold</div><input type="range" min="0" max="1" step=".01" value=".50" id="t"></div>
+  <div class="ctrl"><div class="ct"><span class="cn">sleep latency</span><span class="cv" id="ov">0.40</span></div><div class="ch">arrival delay · form completeness</div><input type="range" min="0" max="1" step=".01" value=".40" id="o"></div>
+  <div class="ctrl"><div class="ct"><span class="cn">wake count</span><span class="cv" id="wv">0.20</span></div><div class="ch">tentacle rupture · node breaks</div><input type="range" min="0" max="1" step=".01" value=".20" id="w"></div>
+  <div class="ctrl"><div class="ct"><span class="cn">day residue</span><span class="cv" id="av">0.55</span></div><div class="ch">day exertion · orbit weight</div><input type="range" min="0" max="1" step=".01" value=".55" id="a"></div>
+  <div class="membox">
+    <div class="memtxt" id="memtxt">loading memory...</div>
+    <div class="membtns">
+      <button class="membtn" id="btn-rec">record tonight</button>
+      <button class="membtn" id="btn-bad">bad night</button>
+      <button class="membtn" id="btn-clr">clear</button>
+    </div>
+  </div>
+</div>
+
+<button class="mode-btn" id="mode-btn">⊹ parameters</button>
+<script>
+// ---- setup ----
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const CX = W/2, CY = H * .28;
+const PI2 = Math.PI * 2;
+let D=.68, R=.55, S=.12, T=0;
+let HRV=.65, TEMP=.50, ONSET=.40, WAKE=.20, STEPS=.55;
+
+// ---- slow tissue memory ----
+function loadMem(){
+  try{
+    const raw=localStorage.getItem('dream-bio-mem-v1');
+    if(raw){
+      const m=JSON.parse(raw);
+      const cl=v=>Math.max(0,Math.min(1,v??0));
+      return {d:cl(m.d),r:cl(m.r),s:cl(m.s),hrv:cl(m.hrv),temp:cl(m.temp),
+              onset:cl(m.onset),wake:cl(m.wake),steps:cl(m.steps),nights:m.nights||1};
+    }
+  }catch(e){}
+  return {d:.68,r:.55,s:.12,hrv:.65,temp:.5,onset:.4,wake:.2,steps:.55,nights:1};
+}
+function saveMem(){
+  try{localStorage.setItem('dream-bio-mem-v1',JSON.stringify(MEM));}catch(e){}
+}
+function recordNight(){
+  const w=.18; // learning rate — each night weighs 18%
+  const cl=v=>Math.max(0,Math.min(1,v));
+  MEM.d=cl(MEM.d*(1-w)+D*w);
+  MEM.r=cl(MEM.r*(1-w)+R*w);
+  MEM.s=cl(MEM.s*(1-w)+S*w);
+  MEM.hrv=cl(MEM.hrv*(1-w)+HRV*w);
+  MEM.temp=cl(MEM.temp*(1-w)+TEMP*w);
+  MEM.onset=cl(MEM.onset*(1-w)+ONSET*w);
+  MEM.wake=cl(MEM.wake*(1-w)+WAKE*w);
+  MEM.steps=cl(MEM.steps*(1-w)+STEPS*w);
+  MEM.nights=(MEM.nights||1)+1;
+  saveMem(); updateMemUI();
+}
+function simulateBadNight(){
+  MEM.d=Math.max(0,MEM.d-.18); MEM.r=Math.min(1,MEM.r+.12);
+  MEM.s=Math.min(1,MEM.s+.22); MEM.wake=Math.min(1,MEM.wake+.25);
+  MEM.hrv=Math.max(0,MEM.hrv-.15); MEM.onset=Math.min(1,MEM.onset+.2);
+  saveMem(); updateMemUI();
+}
+function clearMem(){
+  MEM={d:.68,r:.55,s:.12,hrv:.65,temp:.5,onset:.4,wake:.2,steps:.55,nights:1};
+  saveMem(); updateMemUI();
+}
+function updateMemUI(){
+  if(typeof updateExMem==="function") updateExMem();
+  const el=document.getElementById('memtxt'); if(!el) return;
+  const n=MEM.nights||1;
+  el.textContent=`${n} night${n>1?'s':''} remembered · deep ${MEM.d.toFixed(2)} · rem ${MEM.r.toFixed(2)} · stress ${MEM.s.toFixed(2)}`;
+}
+let MEM=loadMem();
+
+// ---- rotation ----
+let rotX=.25, rotY=.1, dragX=0, dragY=0, isDrag=false, floatY=0;
+canvas.addEventListener('mousedown',  e=>{ isDrag=true; dragX=e.clientX; dragY=e.clientY; });
+window.addEventListener('mousemove',  e=>{ if(!isDrag) return; rotY+=(e.clientX-dragX)*.005; rotX+=(e.clientY-dragY)*.004; rotX=Math.max(-.4,Math.min(1.1,rotX)); dragX=e.clientX; dragY=e.clientY; });
+window.addEventListener('mouseup',    ()=>isDrag=false);
+canvas.addEventListener('touchstart', e=>{ isDrag=true; dragX=e.touches[0].clientX; dragY=e.touches[0].clientY; e.preventDefault(); },{passive:false});
+canvas.addEventListener('touchmove',  e=>{ if(!isDrag) return; rotY+=(e.touches[0].clientX-dragX)*.005; rotX+=(e.touches[0].clientY-dragY)*.004; rotX=Math.max(-.4,Math.min(1.1,rotX)); dragX=e.touches[0].clientX; dragY=e.touches[0].clientY; e.preventDefault(); },{passive:false});
+canvas.addEventListener('touchend',   ()=>isDrag=false);
+
+// ---- 3D projection ---- (no scale baked in — we scale drawing size separately)
+const FOV = 560;
+function proj(x,y,z){
+  const cy=Math.cos(rotY), sy=Math.sin(rotY);
+  const x1=x*cy-z*sy, z1=x*sy+z*cy;
+  const cx2=Math.cos(rotX), sx2=Math.sin(rotX);
+  const y2=y*cx2-z1*sx2, z2=y*sx2+z1*cx2;
+  const d = FOV+z2+320;
+  if(d<1) return null;
+  const sc = FOV/d;
+  return { px: CX+x1*sc, py: CY+floatY+y2*sc, sc, z: z2 };
+}
+
+// ---- noise ----
+function sn(x,y,z=0){
+  return Math.sin(x*1.9+y*2.7+z)*.36 + Math.sin(x*3.3-y*1.6+z*1.8)*.30
+       + Math.sin(x*5.1+y*.8 -z*2.3)*.20 + Math.sin(x*.7+y*5.2+z*.5)*.14;
+}
+function fbm(x,y,z=0,oct=4){
+  if(!isFinite(x)||!isFinite(y)) return 0;
+  let v=0, a=.5, f=1;
+  for(let i=0;i<oct;i++){ v+=sn(x*f+z*.2, y*f-z*.17, i*1.45)*a; a*=.54; f*=2.1; }
+  return v;
+}
+function lerp(a,b,t){return a+(b-a)*t;}
+function habs(n){let v=(Math.sin(n*127.1+311.7)*43758.5453)%1; return v<0?-v:v;}
+
+// ---- palette (10 bands) ----
+function makePal(s){
+  const cold=[[28,14,80],[42,32,140],[38,85,175],[32,128,188],[42,168,165],[148,88,205],[195,125,232],[215,180,248],[228,218,252],[245,242,255]];
+  const warm=[[60,18,22],[108,32,28],[158,55,28],[195,105,35],[225,155,55],[240,190,85],[250,215,125],[252,232,165],[255,242,200],[255,250,235]];
+  if(s<.25) return cold;
+  if(s>.65) return warm;
+  const t=(s-.25)/.4;
+  return cold.map((c,i)=>c.map((v,j)=>Math.round(lerp(v,warm[i][j],t))));
+}
+
+// ---- states ----
+const STATES=[
+  {t:()=>S>.72,                        n:'Armored Fragment',       p:'too many edges\nnothing soft remaining\nstill watching'},
+  {t:()=>WAKE>.65&&D>.4,              n:'Fractured Sleeper',      p:'surface broken\nstill reaching through\nthirty-seven interruptions'},
+  {t:()=>D>.65&&R<.3&&HRV>.6,        n:'Phosphorescent Drifter', p:'slow breath\nlight gathers in the folds\nbody complete'},
+  {t:()=>R>.72&&D<.38,               n:'Neural Coral',           p:'filaments extending\nevery direction at once\nsleeping sideways'},
+  {t:()=>D>.55&&R>.5&&HRV>.55,       n:'Bioluminescent Bloom',   p:'dreaming inside the dream\norgan light stable\nsomething forming'},
+  {t:()=>TEMP>.7&&S>.3,              n:'Fever Organism',         p:'too warm to rest\nbody making something\nburning through the night'},
+  {t:()=>ONSET>.7&&WAKE>.4,          n:'Midnight Fugitive',      p:'late arrival\nbroken passage\nstill not fully here'},
+  {t:()=>S>.42&&R>.5,                n:'Jittering Larvae',       p:'antennae overextended\ncannot settle\nstill growing, barely'},
+  {t:()=>STEPS>.8&&D>.5,             n:'Exhausted Bloom',        p:'moved all day\nfinally still\ndeep and luminous'},
+  {t:()=>D<.28&&R<.28,               n:'Undeveloped Cyst',       p:'did not sleep long enough\nform incomplete\nwaiting for tomorrow'},
+  {t:()=>HRV<.3&&D>.5,              n:'Still Waters',           p:'heart barely varying\ndeeply anchored\nno ripple, no edge'},
+  {t:()=>true,                        n:'Soft Pelagic',           p:'between deep and bright\nbody in negotiation\nstill here'},
+];
+function gst(){return STATES.find(x=>x.t());}
+
+// ---- core drawing primitives (screen-space) ----
+function splat(px,py,rx,ry,col,alpha,rot){
+  if(!isFinite(px)||!isFinite(py)||!isFinite(rx)||!isFinite(alpha)) return;
+  if(alpha<.002||rx<.3) return;
+  ctx.save(); ctx.translate(px,py); ctx.rotate(rot||0);
+  const mx=Math.max(rx,ry)||1; ctx.scale(rx/mx, ry/mx);
+  const g=ctx.createRadialGradient(0,0,0,0,0,mx);
+  const[r,gr,b]=col;
+  g.addColorStop(0,   `rgba(${r},${gr},${b},${alpha})`);
+  g.addColorStop(.22, `rgba(${r},${gr},${b},${alpha*.68})`);
+  g.addColorStop(.52, `rgba(${r},${gr},${b},${alpha*.25})`);
+  g.addColorStop(.8,  `rgba(${r},${gr},${b},${alpha*.07})`);
+  g.addColorStop(1,   `rgba(${r},${gr},${b},0)`);
+  ctx.beginPath(); ctx.arc(0,0,mx,0,PI2); ctx.fillStyle=g; ctx.fill(); ctx.restore();
+}
+function glw(px,py,r,col,alpha){
+  if(!isFinite(px)||!isFinite(py)||!isFinite(r)||!isFinite(alpha)) return;
+  if(alpha<.002||r<.3) return;
+  const g=ctx.createRadialGradient(px,py,0,px,py,r);
+  const[cr,cg,cb]=col;
+  g.addColorStop(0,   `rgba(${cr},${cg},${cb},${alpha})`);
+  g.addColorStop(.16, `rgba(${cr},${cg},${cb},${alpha*.74})`);
+  g.addColorStop(.42, `rgba(${cr},${cg},${cb},${alpha*.28})`);
+  g.addColorStop(.72, `rgba(${cr},${cg},${cb},${alpha*.07})`);
+  g.addColorStop(1,   `rgba(${cr},${cg},${cb},0)`);
+  ctx.beginPath(); ctx.arc(px,py,r,0,PI2); ctx.fillStyle=g; ctx.fill();
+}
+
+// ---- BELL ----
+function drawBell(LC){
+  const bR = 185;
+  // gentle double-rhythm breath
+  // HRV: high = rich multi-layered breath, low = monotone shallow
+  // heartbeat breath: slow expand, slower contract
+  // shaped waveform: abs(sin)^0.4 gives quick peak, long trough
+  const breathRich=lerp(.04,1.3,HRV);
+  const heartRate=lerp(.18,.55,R); // slow at low REM, faster at high
+  const heartPhase=T*heartRate;
+  // primary beat: quick swell, slow release
+  const beatShape=Math.pow(Math.abs(Math.sin(heartPhase)),0.35); // 0→1, spends more time near 0
+  const breath = beatShape*lerp(18,42,D)  // large amplitude: 10-23% of bR
+               - lerp(8,18,D)*.5           // offset so it oscillates around 0
+               + Math.sin(T*lerp(.08,.22,R)+breathRich)*lerp(3,8,D)*breathRich*.4; // subtle secondary flutter
+
+  // --- body: place splats in 3D, project, depth-sort, draw ---
+  const N = 500 + Math.floor(D*450) + Math.floor(R*80);
+  const pts = [];
+  for(let i=0;i<N;i++){
+    // distribute with sqrt for denser center
+    const baseAng = habs(i*7.31)*PI2;
+    const baseEl  = habs(i*4.13)*Math.PI;
+    const baseR   = (bR + breath) * Math.sqrt(habs(i*2.9));
+    const x3 = baseR*Math.sin(baseEl)*Math.cos(baseAng);
+    const y3 = baseR*Math.cos(baseEl)*lerp(.48,.72,D);
+    const z3 = baseR*Math.sin(baseEl)*Math.sin(baseAng);
+    // ONSET: late sleep = whole bell tilts/collapses to one side
+    const onsetTiltX = ONSET*bR*.55*Math.sin(baseAng)*Math.max(0,Math.cos(baseEl));
+    const onsetTiltY = ONSET*bR*.3*Math.abs(Math.sin(baseAng));
+    const fx_pre=x3+onsetTiltX, fy_pre=y3+onsetTiltY;
+    // position-only warp (no T so no flicker)
+    const tw=T*.14;
+    const wAmp=lerp(.38,.72,D);
+    const wx = fbm(fx_pre*.007+tw, fy_pre*.006+tw*.4, i*.04, 3)*bR*wAmp;
+    const wy = fbm(fx_pre*.006+tw*.3, fy_pre*.007+5, i*.04+3, 3)*bR*wAmp*.75;
+    const wz = fbm(x3*.005+5+tw*.2, fy_pre*.006, i*.04+6, 3)*bR*wAmp*.9;
+    const fx=fx_pre+wx, fy=fy_pre+wy, fz=z3+wz;
+    const dist=Math.sqrt(fx*fx+(fy/lerp(.48,.72,D))**2+fz*fz)/bR;
+    // ONSET: late sleep = bell half-formed, one side dimmer/smaller
+    const onsetSide=Math.cos(baseAng+Math.PI*.5);
+    const onsetSuppression=Math.max(0,(onsetSide*.5+.5)*ONSET*1.8);
+    if(dist>lerp(.85,1.55,D)*(1-onsetSuppression*.35)) continue;
+    const p=proj(fx,fy,fz); if(!p) continue;
+
+    // color: inner bright, outer dark; + slow color drift (not position)
+    const cn = sn(fx*.011+T*.004, fy*.011, i*.07)*.5+.5;
+    const ci = Math.max(0,Math.min(9,Math.floor((1-Math.min(dist,1))*7.5+cn*2.2)));
+    const sz = bR*lerp(.065,.22,D)*(1-dist*.5)*(0.65+habs(i*1.2)*.5);
+    // per-splat slow pulse → gentle organic flicker
+    // HRV: high = rich pulsing variation per splat, low = flat uniform dim
+    const pulseDepth=lerp(.08,.96,HRV);
+    const pulse = (1-pulseDepth)+pulseDepth*Math.abs(Math.sin(T*lerp(1.2,3.2,D)+i*.23+dist*2.2));
+    const dn = fbm(fx*.007, fy*.007+T*.003, i*.055, 3)*.5+.5;
+    const onsetDim=(Math.cos(baseAng+Math.PI*.5)*.5+.5)*ONSET*1.4;
+    const alpha = lerp(.06,.44,D)*(1-dist*.55)*(0.5+dn*.85)*(1-S*.08)*pulse*(1-onsetDim*.55);
+    if(alpha<.003) continue;
+    pts.push({px:p.px, py:p.py, z:p.z, sc:p.sc, ci, sz, alpha, rot:baseAng});
+  }
+  pts.sort((a,b)=>a.z-b.z);
+  pts.forEach(pt=>{
+    const s=pt.sz*pt.sc;
+    splat(pt.px, pt.py, s*lerp(1.3,2.2,habs(pt.rot)), s, LC[pt.ci], pt.alpha, pt.rot);
+  });
+
+  // --- membrane: projected fbm-displaced rings ---
+  for(let pass=0;pass<7;pass++){
+    const pf=1-pass*.11;
+    const pW=(bR+breath*.6)*pf, pH=(bR+breath*.4)*pf*lerp(.48,.72,D);
+    const pA=lerp(.028,.1,D)*(1-pass*.12)*(1-S*.14);
+    const col=LC[Math.min(pass+1,9)];
+    const Np=200;
+    ctx.beginPath();
+    for(let i=0;i<=Np;i++){
+      const ang=(i/Np)*PI2;
+      const d1=fbm(Math.cos(ang)*1.2+T*.08, Math.sin(ang)*1.2+T*.07, T*.9+pass*.9, 3)*lerp(.06,.32,1-D);
+      const d2=sn(ang*(9+pass*1.4)+T*.9+Math.sin(T*.55)*2.0, D+pass)*.018*lerp(1,4,1-D);
+      const lobe=sn(ang*2.1+T*.08+pass*.3, D)*(bR*.055)*(1+R*.2);
+      const rx=(pW*(1+d1+d2)+lobe)*Math.cos(ang);
+      const ry= pW*(1+d1*.5+d2*.4)*Math.sin(ang)*lerp(.48,.72,D);
+      const rz=(pW*(1+d1*.3)+lobe*.4)*Math.sin(ang)*.2;
+      const p=proj(rx,ry,rz); if(!p){ctx.closePath();ctx.beginPath();continue;}
+      i===0?ctx.moveTo(p.px,p.py):ctx.lineTo(p.px,p.py);
+    }
+    ctx.closePath();
+    const[r,g,b]=col;
+    const pc=proj(0,0,0)||{px:CX,py:CY};
+    const fg=ctx.createRadialGradient(pc.px-pW*.07,pc.py-pH*.2,0,pc.px,pc.py,Math.max(pW,pH)*1.1);
+    fg.addColorStop(0,  `rgba(${r},${g},${b},${pA*2.8})`);
+    fg.addColorStop(.3, `rgba(${r},${g},${b},${pA*1.4})`);
+    fg.addColorStop(.62,`rgba(${r},${g},${b},${pA*.45})`);
+    fg.addColorStop(.85,`rgba(${r},${g},${b},${pA*.12})`);
+    fg.addColorStop(1,  `rgba(${r},${g},${b},0)`);
+    ctx.fillStyle=fg; ctx.fill();
+    ctx.strokeStyle=`rgba(${r},${g},${b},${pA*.22})`; ctx.lineWidth=.28; ctx.stroke();
+  }
+
+  // --- NEBULA ARMS: bright asymmetric lobes radiating from bell ---
+  {
+    const armN=3+Math.floor(D*1.5);
+    for(let a=0;a<armN;a++){
+      const armAng=(a/armN)*PI2+T*.006+D*.8+a*0.3;
+      const armLen=bR*lerp(.5,1.3,D);
+      // each arm = chain of glows from center outward
+      const steps=18;
+      for(let s=1;s<steps;s++){
+        const pct=s/steps;
+        // arm position in 3D — spread in X/Z plane, slight Y variation
+        const wobble=sn(armAng*2+T*.05+s*.3,pct*3)*bR*.12;
+        const x3=Math.cos(armAng)*armLen*pct+wobble;
+        const y3=Math.sin(armAng*.7+T*.04)*bR*.1*pct; // slight vertical drift
+        const z3=Math.sin(armAng)*armLen*pct+wobble*.5;
+        const p=proj(x3,y3,z3); if(!p) continue;
+        // brightness: peaks at 40% along arm, fades at tip
+        const envelope=Math.exp(-((pct-.38)*(pct-.38))/.08)*(1-pct*.4);
+        const armAlpha=lerp(.04,.22,D)*envelope*(1+Math.sin(T*lerp(.3,.8,D)+a*1.7)*.3);
+        const armSz=bR*lerp(.12,.35,D)*(1-pct*.5)*p.sc;
+        const armCi=Math.min(9,Math.floor(pct*5+3));
+        // wide soft halo
+        glw(p.px,p.py,armSz*2.5,LC[armCi],armAlpha*.7);
+        // bright inner core
+        glw(p.px,p.py,armSz*.9,LC[Math.min(armCi+1,9)],armAlpha*1.1);
+      }
+    }
+  }
+
+  // --- organs (asymmetric cluster) ---
+  const orgs=[
+    [-.12,-.09,.08,.38,7],[.18,.06,-.12,.28,6],[-.2,.12,.15,.24,5],
+    [.08,-.18,-.08,.32,8],[0,.02,0,.46,8],
+    [-.14,.2,.1,.2,5],[.24,-.1,.06,.22,6],[-.22,-.08,-.14,.2,4],
+  ];
+  orgs.forEach(([ox,oy,oz,sf,ci],i)=>{
+    const drift=sn(T*.14+i,i*1.2)*bR*.08;
+    const p=proj(ox*bR+drift, oy*bR*lerp(.48,.72,D)+drift*.5, oz*bR+drift*.7);
+    if(!p) return;
+    const sz=bR*sf*lerp(.4,1,D)*p.sc;
+    splat(p.px,p.py,sz*1.7,sz*1.3,LC[Math.max(0,ci-2)],lerp(.06,.18,D));
+    splat(p.px,p.py,sz,sz*.8,LC[ci],lerp(.1,.3,D));
+    glw(p.px,p.py,sz*.7,LC[Math.min(ci+1,9)],lerp(.1,.35,D));
+    glw(p.px,p.py,sz*.28,LC[9],lerp(.07,.28,D));
+  });
+
+  // --- rim glow ---
+  const rimN=50+Math.floor(D*26);
+  for(let i=0;i<rimN;i++){
+    const ang=(i/rimN)*PI2;
+    const rw=bR*(1+fbm(Math.cos(ang)*.85, Math.sin(ang)*.85, T*.012, 2)*lerp(.02,.07,1-D));
+    const p=proj(Math.cos(ang)*rw, Math.sin(ang)*rw*lerp(.48,.72,D), Math.sin(ang)*rw*.14);
+    if(!p) continue;
+    const pulse=.35+.65*Math.sin(T*.9+i*.3+Math.sin(T*.22)*2);
+    const rci=Math.max(0,Math.min(9,Math.floor(4+Math.sin(ang+.8)*2.6)));
+    const wakeRimFlicker=WAKE>.2?(1+Math.sin(T*lerp(3,9,WAKE)+i*1.7)*WAKE*.6):1;
+    glw(p.px,p.py,(bR*.12+D*6)*p.sc, LC[rci], lerp(.04,.13,D)*pulse*(.75+.25*Math.sin(T*.9+i*.22))*wakeRimFlicker);
+  }
+
+  // --- breathing pulse waves ---
+  for(let pw=0;pw<2;pw++){
+    const pt=(T*lerp(.18,.65,R)+pw*Math.PI)%(PI2);
+    const pR=bR*(1.1+pt*.2);
+    const pA=Math.max(0,.09-pt*.028)*lerp(.2,1,D)*(1-S*.2);
+    if(pA>.003){
+      const p0=proj(0,0,0); if(!p0) continue;
+      glw(p0.px,p0.py,pR*p0.sc,LC[3],pA*.4);
+      glw(p0.px,p0.py,pR*1.5*p0.sc,LC[1],pA*.18);
+    }
+  }
+
+  // --- specular crown ---
+  const pc=proj(-bR*.11,-bR*.3*lerp(.48,.72,D),0);
+  if(pc){ glw(pc.px,pc.py,bR*.28*pc.sc,LC[8],lerp(.04,.14,D)); glw(pc.px,pc.py,bR*.1*pc.sc,LC[9],lerp(.05,.22,D)); }
+
+  // --- stress fractures ---
+  if(S>.22){
+    for(let i=0;i<Math.floor(S*14);i++){
+      const fa=habs(i*5.27)*PI2, fe=habs(i*3.1)*Math.PI;
+      const fr=bR*(habs(i*2.1)*.62+.1);
+      const p=proj(fr*Math.sin(fe)*Math.cos(fa), fr*Math.cos(fe)*lerp(.48,.72,D), fr*Math.sin(fe)*Math.sin(fa));
+      if(!p) continue;
+      splat(p.px,p.py,bR*lerp(.08,.18,S)*lerp(1,2.5,habs(i*.8))*p.sc,
+            bR*lerp(.05,.12,S)*p.sc, LC[i%2===0?3:4], S*lerp(.1,.25,habs(i*.7)));
+    }
+  }
+
+  // --- phosphorescence ---
+  const pN=Math.floor(D*80+R*25);
+  for(let i=0;i<pN;i++){
+    const a=habs(i*1.27)*PI2+T*(.012+R*.008)*(i%2?1:-1), el=habs(i*2.3)*Math.PI+T*.015*Math.sin(i*.4);
+    const rr=bR*(habs(i*.68)*.36+habs(i*2.08)*.52)*lerp(.2,.9,D);
+    const p=proj(rr*Math.sin(el)*Math.cos(a), rr*Math.cos(el)*lerp(.48,.72,D), rr*Math.sin(el)*Math.sin(a));
+    if(!p) continue;
+    const pulse=.5+.5*Math.sin(T*1.6+i*1.1);
+    const dsz=lerp(3,12,D)*(0.45+pulse*.55)*p.sc;
+    glw(p.px,p.py,dsz*3.2,LC[Math.min(Math.floor(habs(i*.86)*7)+2,9)],D*.32*pulse);
+    if(D>.32&&pulse>.58) glw(p.px,p.py,dsz*.9,LC[9],D*.1*pulse);
+  }
+}
+
+// ---- TENTACLES — hang from bottom rim, ribbon motion ----
+function drawTentacles(LC){
+  const bR = 185;
+  const longN = Math.floor(30+R*45);
+  const oralN = Math.floor(14+R*22);
+  const allTentacles = []; // array of tentacles, each is array of segments
+
+  function makeTentacle(idx, kind){
+    const ps1=habs(idx*7.31)*PI2, ps2=habs(idx*3.17+1.7)*PI2, ps3=habs(idx*5.93+3.2)*PI2;
+    const total = kind==='long'?longN:oralN;
+
+    // origin: distribute around bottom rim of bell
+    const theta = (idx/total)*PI2 + habs(idx*3.71)*.35;
+    // elevation from top: long=lower half, oral=equatorial
+    const rimEl = kind==='long'
+      ? lerp(Math.PI*.52, Math.PI*.88, habs(idx*2.31))
+      : lerp(Math.PI*.44, Math.PI*.70, habs(idx*1.93));
+    const rimR = bR*lerp(.88,.97,D)*Math.sin(rimEl);
+    const rimYv= bR*lerp(.48,.72,D)*Math.cos(rimEl);
+    const sx=rimR*Math.cos(theta), sy=rimYv, sz2=rimR*Math.sin(theta);
+
+    // outward lean direction (normalized outward+down)
+    const lean=lerp(.14,.3,D);
+    // STEPS: high steps = tentacles hang more vertically (heavy, fatigued)
+    const stepsHang=lerp(0,.18,STEPS);
+    // ONSET: late sleep = tentacles lean toward collapsed side
+    const onsetLeanX=ONSET*.5*Math.sin(theta); // lean toward one quadrant
+    const onsetLeanY=ONSET*.25; // also slightly more downward
+    const dirX=Math.cos(theta)*lean*(1-stepsHang)+onsetLeanX, dirY=lerp(.85,.7,lean)+stepsHang+onsetLeanY, dirZ=Math.sin(theta)*lean*(1-stepsHang);
+
+    // perpendicular sway axes in 3D
+    const p1x=-Math.sin(theta), p1y=0, p1z=Math.cos(theta);  // tangent around rim
+    const p2x=dirY*p1z, p2y=dirZ*p1x-dirX*p1z, p2z=-dirY*p1x; // up-ish cross
+
+    const tLen = kind==='long'
+      ? Math.floor(lerp(160,380,R)*(0.72+habs(idx*1.6)*.48))
+      : Math.floor(lerp(65,170,R)*(0.68+habs(idx*2.1)*.52));
+    const step = kind==='long'?lerp(1.2,2.2,R):lerp(.8,1.5,R);
+    const colBase=Math.floor(habs(idx*2.3)*7);
+    // HRV: high = expansive arcs, low = tight constricted motion
+    const hrvScale=lerp(.12,2.2,HRV); // 0.12x at low HRV = almost rigid, 2.2x at high = expansive
+    const swayA=(kind==='long'?lerp(18,55,R):lerp(10,32,R))*hrvScale;
+    // HRV: low HRV = tighter shorter waves, high HRV = long slow undulation
+    const hrvFreqScale=lerp(2.8,.35,HRV); // high HRV = very long slow arcs, low = tight fast
+    const swayF=(kind==='long'?lerp(.006,.014,R):lerp(.008,.018,R))*hrvFreqScale;
+    const swaySpd=lerp(.06,.24,R)*lerp(2.0,.5,HRV); // low HRV = twice as fast/twitchy, high = half speed/deliberate
+
+    const segPts=[];
+    for(let j=0;j<tLen;j++){
+      const pct=j/tLen;
+      const arc=j*step;
+      // sway: pure sine of arc-length → no looping ever
+      // S-curve: two sine waves along arc give organic ribbon shape
+      // HRV: low HRV adds jitter/rigidity to tentacle motion
+      const bodyDrift=Math.sin(T*lerp(.15,.4,R)+ps1)*swayA*lerp(.12,.65,HRV);
+      const bodyDrift2=Math.sin(T*lerp(.1,.26,R)+ps2+1.3)*swayA*.22;
+      // primary wave: one full S-curve along tentacle length
+      const lat =Math.sin(arc*swayF + T*swaySpd + ps1)*swayA*(0.6+pct*.4)
+               +Math.sin(arc*swayF*2.3 + T*swaySpd*.8 + ps2)*swayA*.28
+               +bodyDrift*(1-pct*.7);
+      // secondary axis: gentle cross-wave + gravity curl at tip
+      // STEPS: high steps = fatigued heavy tips that droop and trail
+      const gravWeight=lerp(.25,.85,STEPS);
+      const gravityCurl=pct*pct*swayA*gravWeight;
+      const lat2=Math.sin(arc*swayF*1.4 + T*swaySpd*.6 + ps3)*swayA*.22
+               +bodyDrift2*(1-pct*.6)+gravityCurl;
+      // WAKE convulsion: burst displacement in position space
+      let convulseLat=0, convulseLat2=0;
+      if(WAKE>.12){
+        const cv1=Math.sin(T*lerp(2.5,7,WAKE)+ps1*4.3);
+        const cv2=Math.sin(T*lerp(1.8,5,WAKE)+ps2*3.1+2.7);
+        const burst=cv1*cv2;
+        const convulseStrength=Math.max(0,Math.abs(burst)-lerp(.65,.2,WAKE))*3;
+        const convulseEnvelope=pct*pct*(3-2*pct);
+        // keep convulsion small — a jerk, not a full flip
+        const jerkSize=lerp(8,28,WAKE); // fixed size, not relative to swayA
+        convulseLat=Math.sign(burst)*convulseStrength*jerkSize*convulseEnvelope;
+        convulseLat2=Math.sin(T*lerp(3,8,WAKE)+ps3*2.7)*convulseStrength*jerkSize*.5*convulseEnvelope;
+      }
+      const x3=sx+dirX*arc+p1x*(lat+convulseLat)+p2x*(lat2+convulseLat2);
+      const y3=sy+dirY*arc+p1y*(lat+convulseLat)+p2y*(lat2+convulseLat2);
+      const z3=sz2+dirZ*arc+p1z*(lat+convulseLat)+p2z*(lat2+convulseLat2);
+      const p=proj(x3,y3,z3); if(!p) continue;
+      const _p2=proj(x3+dirX*step*2,y3+dirY*step*2,z3+dirZ*step*2);
+      const screenAng=_p2?Math.atan2(_p2.py-p.py,_p2.px-p.px):0;
+      const ci=Math.min(9,Math.floor((colBase+pct*4)%9));
+      // STEPS: high steps = thicker heavier tentacles (muscle fatigue)
+    const stepsThick=lerp(.85,1.15,STEPS); // subtle step thickness
+    const sz=((kind==='long'?lerp(.55,1.8,D):lerp(.35,1.1,D))*(1-pct*.68))*p.sc*stepsThick;
+      const aT=lerp(.12,.32,D+R*.3)*(1-pct*.44)*(1-S*.08);
+      const swell=Math.sin(pct*PI2*lerp(2,4.5,D)+T*lerp(.06,.2,R)+ps3);
+      segPts.push({px:p.px,py:p.py,z:p.z,sc:p.sc,ci,sz,aT,swell,step:step*p.sc,pct,ps1,ps2,arc:j*step,ang:screenAng});
+    }
+    return segPts;
+  }
+
+  // build all tentacles
+  for(let i=0;i<longN;i++) allTentacles.push(makeTentacle(i,'long'));
+  for(let i=0;i<oralN;i++) allTentacles.push(makeTentacle(i+1000,'oral'));
+
+  // sort tentacles by average Z (back to front), but keep segment order within each
+  allTentacles.forEach(t=>{ t._avgZ = t.length>0 ? t.reduce((s,p)=>s+p.z,0)/t.length : 0; });
+  allTentacles.sort((a,b)=>a._avgZ-b._avgZ);
+
+  allTentacles.forEach(segs=>{
+    segs.forEach(pt=>{
+    const {px,py,sz,aT,ci,swell,step:stepPx,pct,ps1:pt_ps1,ps2:pt_ps2,arc:pt_arc,sc:pt_sc}=pt;
+    // continuous ribbon: step-sized splat so no gaps
+    // WAKE: high wake count causes tentacle gaps
+    // WAKE: only position displacement, no competing glow
+    // tentacle body: overlapping splats (ChatGPT style)
+    splat(px,py,stepPx*1.2,sz*1.1,LC[ci],aT);
+    splat(px,py,stepPx*.55,sz*.48,LC[Math.min(ci+1,9)],aT*.6);
+    if(pct<.25) splat(px,py,stepPx*.2,sz*.15,LC[Math.min(ci+2,9)],aT*.6*(1-pct*4));
+    if(swell>.72&&sz>.9){
+      glw(px,py,sz*3.2,LC[Math.min(ci+1,9)],aT*.38);
+      glw(px,py,sz*1.4,LC[Math.min(ci+2,9)],aT*.25);
+    }
+    // traveling light pulse — directional elongated streak along tentacle
+    const pulseSpd1=lerp(.18,.5,R);
+    const pulseSpd2=lerp(.1,.3,R);
+    const pulsePos1=(T*pulseSpd1 + pt_ps1/PI2)%1;
+    const pulsePos2=(T*pulseSpd2 + pt_ps2/PI2 + .5)%1;
+    const distToP1=Math.abs(pct-pulsePos1);
+    const distToP2=Math.abs(pct-pulsePos2);
+    // tight falloff = small focused blob
+    const pulseA1=Math.max(0,1-distToP1*18)*lerp(.08,.28,D);
+    const pulseA2=Math.max(0,1-distToP2*14)*lerp(.05,.2,D);
+    // use screen angle from stored direction
+    const pAng=pt.ang||0;
+    const pSc=pt.sc||0.63;
+    if(pulseA1>.004){
+      glw(px,py, sz*3+pSc*2.5, LC[Math.min(ci+2,9)], pulseA1*.4);
+      splat(px,py, pSc*6, pSc*1.4, LC[Math.min(ci+3,9)], pulseA1*.85, pAng);
+      splat(px,py, pSc*3, pSc*.6,  [248,244,255],         pulseA1*.65, pAng);
+    }
+    if(pulseA2>.004){
+      glw(px,py, sz*2.5+pSc*2, LC[Math.min(ci+1,9)], pulseA2*.32);
+      splat(px,py, pSc*4.5, pSc*1.1, LC[Math.min(ci+2,9)], pulseA2*.65, pAng);
+    }
+    });
+  });
+}
+
+// ---- outer nebula haze ----
+function drawHaze(LC){
+  const bR=lerp(52,128,D);
+  for(let zone=0;zone<7;zone++){
+    const za=zone/7*PI2+T*.018*(zone%2?1:-1);
+    const zci=[0,2,4,1,3,2,5][zone]||0;
+    for(let ci=0;ci<18;ci++){
+      const ph=ci/18;
+      const ang3=za+ph*PI2*.85+sn(ph*2.8+zone,T*.08+ci*.18)*1.1+T*.028*(zone%2?1:-1);
+      const el3=(habs(ci*.9+zone)-.5)*Math.PI;
+      const rd=bR*(2.1+habs(ci*2.6+zone)*1.5+sn(T*.1+zone,ci*.3)*.6);
+      const x3=rd*Math.cos(el3)*Math.cos(ang3);
+      const y3=rd*Math.sin(el3)*lerp(.5,.74,D);
+      const z3=rd*Math.cos(el3)*Math.sin(ang3);
+      const p=proj(x3,y3,z3); if(!p) continue;
+      const sz=bR*lerp(.28,.65,habs(ci*1.7+zone))*p.sc;
+      const hazePulse=.45+.55*Math.sin(T*lerp(.6,1.6,D)+zone*1.1+ci*.5);
+      splat(p.px,p.py,sz*lerp(2.0,3.2,habs(ci*.85+zone))*hazePulse,sz*.88,LC[zci],lerp(.03,.1,D)*(1-S*.08)*hazePulse);
+    }
+  }
+}
+
+// ---- soft edge (no rect hard border) ----
+function drawEdge(){
+  // soft vignette: single centered radial, transparent in middle, dark at edges
+  const g=ctx.createRadialGradient(CX,CY,W*.15,CX,CY,W*.78);
+  g.addColorStop(0,'rgba(1,1,8,0)');
+  g.addColorStop(.55,'rgba(1,1,8,0)');
+  g.addColorStop(.82,'rgba(1,1,8,.28)');
+  g.addColorStop(1,'rgba(1,1,8,.68)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+}
+
+
+
+// ---- FLOATING PARTICLES: bioluminescent plankton drifting around bell ----
+function drawFloatingParticles(LC){
+  const bR=185;
+  const pN=Math.floor(50+STEPS*80+D*40);
+  for(let i=0;i<pN;i++){
+    // orbit position — each particle on its own slow path
+    const orbitPhase=habs(i*1.27)*PI2;
+    const orbitR=bR*(lerp(.8,2.8,habs(i*.68)))+sn(T*.08+i,i*.3)*bR*.18;
+    const orbitSpeed=(.008+habs(i*.4)*.012+STEPS*.022)*(i%2?1:-1);
+    const ang=orbitPhase+T*orbitSpeed;
+    const elev=habs(i*2.3)*Math.PI-Math.PI*.5; // -PI/2 to PI/2
+    const x3=orbitR*Math.cos(elev)*Math.cos(ang)+sn(T*.06+i,i*.22)*bR*.12;
+    const y3=orbitR*Math.sin(elev)*lerp(.5,.8,D)+sn(T*.05+i,i*.3+1)*bR*.1+STEPS*bR*.15*habs(i*.3);
+    const z3=orbitR*Math.cos(elev)*Math.sin(ang);
+    const p=proj(x3,y3,z3); if(!p) continue;
+    // pulse each particle independently
+    const pulse=.3+.7*Math.abs(Math.sin(T*lerp(.8,2.2,D)*habs(i*.5+.5)+i*1.3));
+    if(pulse<.15) continue;
+    const dsz=lerp(1.2,4.5,D)*(0.4+pulse*.6)*p.sc;
+    const ci=Math.min(9,Math.floor(habs(i*.88)*7)+1);
+    // depth-attenuate particles behind the bell
+    const depthAlpha=Math.max(.2,Math.min(1,(p.z+400)/500));
+    const wakeFlicker=WAKE>.3?(.6+.4*Math.abs(Math.sin(T*4+i*2.1))):1;
+    glw(p.px,p.py,dsz*2.2,LC[ci],(D*.14+STEPS*.08)*pulse*depthAlpha*wakeFlicker);
+    if(pulse>.6) glw(p.px,p.py,dsz*.7,LC[Math.min(ci+2,9)],D*.12*pulse*depthAlpha);
+  }
+}
+
+
+// ---- MYCELIUM: stress-driven fungal threads that coil into a cocoon ----
+
+
+
+// ---- REM VEIL: soft neural cloud diffusion around bell ----
+
+
+
+
+
+
+// ---- REM VEIL: soft neural cloud diffusion around bell ----
+
+
+
+function drawMycelium(LC){
+  if(S<.08) return;
+  const bR=185;
+  const intensity=Math.max(0,(S-.08)/.92);
+  const cocoonPhase=Math.max(0,(S-.5)/.5);
+  const strandN=Math.floor(intensity*intensity*900+intensity*320+60);
+
+  for(let i=0;i<strandN;i++){
+    const ps1=habs(i*9.17)*PI2, ps2=habs(i*4.33+2.1)*PI2, ps3=habs(i*6.71+5.4)*PI2;
+
+    // origin on bell surface
+    const theta=habs(i*2.618)*PI2;
+    const phi=Math.acos(1-2*habs(i*1.618+.5));
+    const r0=bR*lerp(.7,.95,habs(i*1.43));
+    const sx=r0*Math.sin(phi)*Math.cos(theta);
+    const sy=r0*Math.cos(phi)*lerp(.48,.72,D);
+    const sz0=r0*Math.sin(phi)*Math.sin(theta);
+
+    // direction: outward + random drift, like mold growing out of surface
+    const len0=Math.sqrt(sx*sx+sy*sy+sz0*sz0)+.001;
+    // outward unit vector
+    const ox=sx/len0, oy=sy/len0, oz=sz0/len0;
+    // random perpendicular tilt
+    const tiltAng=ps1;
+    const p1x=-Math.sin(theta), p1z=Math.cos(theta);
+    const tiltAmt=lerp(.3,.8,habs(i*.7));
+    const dx=ox*(1-tiltAmt)+p1x*Math.cos(tiltAng)*tiltAmt;
+    const dy=oy*(1-tiltAmt)+Math.sin(tiltAng)*tiltAmt*.3;
+    const dz=oz*(1-tiltAmt)+p1z*Math.cos(tiltAng)*tiltAmt;
+
+    // strand length: varied, some long some short
+    const strandLen=Math.floor(lerp(20,160,intensity)*lerp(.12,1,habs(i*1.9)*habs(i*1.9)));
+    const step=lerp(1.5,3.5,intensity);
+
+    // gentle organic sway
+    const swayA=lerp(1.5,6,intensity)*(1-cocoonPhase*.5);
+    const swayF=lerp(.01,.025,intensity);
+    const swaySpd=lerp(.012,.045,intensity);
+
+    // at high stress: curl inward
+    const curlRate=cocoonPhase*Math.PI*1.5*(i%2?1:-1);
+
+    // alpha: subtle, grows with stress
+    const baseAlpha=lerp(.12,.38,intensity)*(0.48+habs(i*.8)*.55);
+
+    // color: each strand has its own mold hue — grey-white, sage, dusty yellow, pale lavender
+    const hueType=Math.floor(habs(i*3.7)*4); // 0=grey-white, 1=sage-green, 2=dusty-yellow, 3=pale-lavender
+    let r,g,b2;
+    const fade=habs(i*.53); // 0..1 variation within each type
+    if(hueType===0){      // grey-white — bright, near-white
+      r=Math.round(lerp(195,235,fade)); g=Math.round(lerp(192,230,fade)); b2=Math.round(lerp(185,225,fade));
+    } else if(hueType===1){ // sage-green — mold classic
+      r=Math.round(lerp(105,158,fade)); g=Math.round(lerp(128,178,fade)); b2=Math.round(lerp(88,132,fade));
+    } else if(hueType===2){ // dusty yellow — aged organic
+      r=Math.round(lerp(165,210,fade)); g=Math.round(lerp(155,198,fade)); b2=Math.round(lerp(88,128,fade));
+    } else {              // pale grey — neutral dry
+      r=Math.round(lerp(145,188,fade)); g=Math.round(lerp(145,185,fade)); b2=Math.round(lerp(148,190,fade));
+    }
+    const typeAlphaMod=hueType===0?0.65:hueType===3?0.8:1.0;
+    const strandAlpha=baseAlpha*typeAlphaMod;
+
+    ctx.beginPath();
+    let started=false;
+    for(let j=0;j<strandLen;j++){
+      const pct=j/strandLen;
+      const arc=j*step;
+      const lat=Math.sin(arc*swayF+T*swaySpd+ps1)*swayA*(1-pct*.4)
+               +Math.sin(arc*swayF*1.8+T*swaySpd*.65+ps2)*swayA*.22;
+      // curl inward at high stress
+      const curlAng=curlRate*pct;
+      const x3=sx+(dx*Math.cos(curlAng)-dz*Math.sin(curlAng))*arc+p1x*lat;
+      const y3=sy+dy*arc;
+      const z3=sz0+(dz*Math.cos(curlAng)+dx*Math.sin(curlAng))*arc+p1z*lat;
+
+      const p=proj(x3,y3,z3);
+      if(!p) continue;
+      if(!started){ctx.moveTo(p.px,p.py);started=true;}
+      else ctx.lineTo(p.px,p.py);
+    }
+    if(started){
+      ctx.strokeStyle=`rgba(${r},${g},${b2},${strandAlpha})`;
+      ctx.lineWidth=Math.max(lerp(.7,1.8,intensity)*(1-cocoonPhase*.3),.5);
+      ctx.lineCap='round';
+      ctx.stroke();
+    }
+  }
+
+  // cocoon membrane shell at high stress
+  if(cocoonPhase>.2){
+    for(let pass=0;pass<2;pass++){
+      const shellR2=bR*(1.05+pass*.08);
+      ctx.beginPath();
+      for(let i=0;i<=110;i++){
+        const ang=(i/110)*PI2;
+        const d=1+fbm(Math.cos(ang)+T*.008+pass,Math.sin(ang)+T*.007,T*.05+pass,3)*lerp(.02,.09,cocoonPhase);
+        const p=proj(
+          shellR2*Math.cos(ang)*d,
+          shellR2*Math.sin(ang)*lerp(.48,.72,D)*d,
+          shellR2*Math.sin(ang+.5)*.12*d
+        );
+        if(!p){ctx.closePath();ctx.beginPath();continue;}
+        i===0?ctx.moveTo(p.px,p.py):ctx.lineTo(p.px,p.py);
+      }
+      ctx.closePath();
+      ctx.strokeStyle=`rgba(148,155,118,${cocoonPhase*lerp(.018,.04,cocoonPhase)*(1-pass*.4)})`;
+      ctx.lineWidth=lerp(.15,.45,cocoonPhase);
+      ctx.stroke();
+    }
+  }
+}
+
+
+// ---- REM VEIL: soft neural cloud diffusion around bell ----
+function drawREMVeil(LC){
+  if(R<.12) return;
+  const bR=185;
+  const intensity=Math.max(0,(R-.12)/.88);
+  const N=Math.floor(28+intensity*48);
+
+  for(let i=0;i<N;i++){
+    const seed=i*17.31;
+    const orbitR=bR*(1.12+habs(i*.41)*.82);
+    const orbitSpd=lerp(.28,.65,intensity)*(i%2?1:-1)*(0.5+habs(i*.3)*.9);
+    const orbitPhase=habs(i*2.618)*PI2;
+    const orbitAng=orbitPhase+T*orbitSpd;
+    const orbitElev=lerp(-.52,.52,habs(i*1.618+.5));
+
+    // puff center position (orbiting)
+    const cx3=orbitR*Math.cos(orbitAng)*Math.cos(orbitElev);
+    const cy3=orbitR*Math.sin(orbitElev)*lerp(.6,.88,intensity)
+             +Math.sin(T*lerp(.4,.9,R)+seed)*bR*.07;
+    const cz3=orbitR*Math.sin(orbitAng)*Math.cos(orbitElev);
+
+    // light/shadow based on position
+    const lit=Math.max(.4,1-Math.abs(orbitElev)*.5+Math.cos(orbitAng)*.2);
+    const shadowDim=1-Math.max(0,-Math.cos(orbitAng+.8))*lerp(.1,.3,intensity);
+    const breathe=1+Math.sin(T*lerp(.5,1.2,R)+seed*1.3)*.18;
+
+    // ChatGPT-inspired: multiple sub-puffs per cloud center
+    const puffN=4+Math.floor(intensity*6);
+    for(let p2=0;p2<puffN;p2++){
+      const ps=seed*10+p2*3.7;
+      const lAng=habs(ps*.91)*PI2+T*lerp(.06,.18,intensity)*(p2%2?1:-1);
+      const lElev=(habs(ps*.37)-.5)*Math.PI*.5;
+      const lR=lerp(6,40,habs(ps*.22))*(0.55+intensity*.8);
+      const drift=Math.sin(T*lerp(.25,.7,R)+ps)*lerp(2,8,intensity);
+
+      const x3=cx3+Math.cos(lAng)*Math.cos(lElev)*(lR+drift);
+      const y3=cy3+Math.sin(lElev)*lR+Math.sin(T*lerp(.3,1.0,R)+ps*1.7)*lerp(.5,3,intensity);
+      const z3=cz3+Math.sin(lAng)*Math.cos(lElev)*(lR+drift);
+
+      const p=proj(x3,y3,z3); if(!p) continue;
+
+      const ci=Math.min(9,3+Math.floor(habs(ps*.58)*5));
+      const base=lerp(8,28,habs(ps*.44))*p.sc*(0.7+intensity*.6)*breathe;
+      const alpha=lerp(.018,.085,intensity)*(0.55+habs(ps)*.45)*lit*shadowDim;
+      const puffPulse=1+Math.sin(T*lerp(.35,1.1,R)+ps*2.7)*.15;
+
+      // layered soft puffs (ChatGPT style) + our light/shadow
+      splat(p.px,p.py, base*lerp(1.4,2.8,habs(ps*.71))*puffPulse,
+                       base*lerp(.8,1.8,habs(ps*.19))*puffPulse,
+            LC[Math.max(0,ci-1)], alpha*.65, lAng*.4);
+      splat(p.px,p.py, base*1.15*puffPulse, base*.85*puffPulse,
+            LC[ci], alpha, lAng*.2);
+      if(habs(ps*.12)>.55)
+        glw(p.px,p.py, base*1.6, LC[Math.min(ci+1,9)], alpha*.22);
+    }
+
+    // neural filaments within each cloud (our rotation)
+    if(intensity>.3){
+      const filN=1+Math.floor(intensity*2);
+      for(let f=0;f<filN;f++){
+        const fs=seed*100+f*11.9;
+        const steps=4+Math.floor(intensity*4);
+        let last=null;
+        for(let s=0;s<steps;s++){
+          const pct2=s/(steps-1);
+          const fa=habs(fs*.13)*PI2+pct2*lerp(.5,1.6,R)
+                  +Math.sin(T*lerp(.15,.55,R)+fs)*.25
+                  +orbitAng*.3; // co-rotate with puff
+          const fr=pct2*lerp(5,32,intensity);
+          const fp=proj(cx3+Math.cos(fa)*fr,
+                        cy3+Math.sin(fa*1.7+fs)*fr*.3,
+                        cz3+Math.sin(fa)*fr);
+          if(!fp) continue;
+          const fci=Math.min(9,4+Math.floor(habs(fs+s)*4));
+          glw(fp.px,fp.py,lerp(1.2,4.5,intensity)*fp.sc*(1-pct2*.3),
+              LC[fci],lerp(.005,.018,intensity)*(1-pct2*.2)*lit);
+          if(last&&intensity>.45){
+            ctx.beginPath();ctx.moveTo(last.px,last.py);ctx.lineTo(fp.px,fp.py);
+            ctx.strokeStyle=`rgba(${LC[fci][0]},${LC[fci][1]},${LC[fci][2]},${lerp(.002,.012,intensity)*lit})`;
+            ctx.lineWidth=lerp(.12,.38,D)*fp.sc;ctx.stroke();
+          }
+          last={px:fp.px,py:fp.py};
+        }
+      }
+    }
+  }
+}
+
+function draw(){
+  T += .014+R*.007;
+  if(!isDrag){
+    rotY += .003; // gentle auto-rotate
+    // vertical float: CY shifts up and down slowly
+    floatY = Math.sin(T*.18)*10 + Math.sin(T*.11+1.3)*5;
+  }
+
+  // ---- slow tissue memory blend ----
+  // Current sliders = tonight's weather. MEM = accumulated morphology.
+  // The rendered organism is a blend — history shapes form, present shifts it.
+  const rawD=D,rawR=R,rawS=S,rawHRV=HRV,rawTEMP=TEMP,rawONSET=ONSET,rawWAKE=WAKE,rawSTEPS=STEPS;
+  const mw=.32; // how much memory pulls on current state
+  D=rawD*(1-mw)+MEM.d*mw;
+  R=rawR*(1-mw)+MEM.r*mw;
+  S=rawS*(1-mw)+MEM.s*mw;
+  HRV=rawHRV*(1-mw)+MEM.hrv*mw;
+  TEMP=rawTEMP*(1-mw)+MEM.temp*mw;
+  ONSET=rawONSET*(1-mw)+MEM.onset*mw;
+  WAKE=rawWAKE*(1-mw)+MEM.wake*mw;
+  STEPS=rawSTEPS*(1-mw)+MEM.steps*mw;
+
+  ctx.clearRect(0,0,W,H);
+  // deep space bg
+  const bg=ctx.createRadialGradient(CX,CY*.9,0,CX,H*.55,W);
+  bg.addColorStop(0,'#04061a'); bg.addColorStop(.45,'#02030e'); bg.addColorStop(1,'#010108');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  // distant nebula
+  glw(CX,CY,W*.65,[38,18,90],.06+D*.04);
+  glw(CX+40,CY-30,W*.5,[26,90,160],.04+D*.025);
+  glw(CX-30,CY+20,W*.55,[120,60,180],.035+R*.04);
+  glw(CX,CY+40,W*.48,[60,20,100],.03+D*.02);
+
+  // TEMP shifts color temperature independent of stress
+  // Stress = warm amber (as designed)
+  // TEMP overlays a separate cold↔hot shift on top
+  // Low TEMP: blue-cold overlay. High TEMP: red-hot overlay.
+  const stressLC=makePal(S); // stress drives base palette
+  // TEMP tints: cold=[40,80,200], neutral=no change, hot=[220,60,30]
+  const tempBias=TEMP-.5; // -0.5 cold to +0.5 hot
+  const LC=stressLC.map(([r,g,b])=>[
+    Math.round(Math.min(255,Math.max(0, r + tempBias*120))),
+    Math.round(Math.min(255,Math.max(0, g + tempBias*(-40)))),
+    Math.round(Math.min(255,Math.max(0, b + tempBias*(-180))))
+  ]);
+  drawHaze(LC);
+  drawTentacles(LC);
+  drawBell(LC);
+  drawREMVeil(LC);
+  drawFloatingParticles(LC);
+  drawMycelium(LC);
+  drawEdge();
+
+  // restore raw values so sliders still work correctly
+  D=rawD;R=rawR;S=rawS;HRV=rawHRV;TEMP=rawTEMP;ONSET=rawONSET;WAKE=rawWAKE;STEPS=rawSTEPS;
+
+  requestAnimationFrame(draw);
+}
+
+// ---- controls ----
+function bind(id,vid,fn){
+  const el=document.getElementById(id), ve=document.getElementById(vid);
+  el.addEventListener('input',()=>{
+    fn(parseFloat(el.value)); ve.textContent=parseFloat(el.value).toFixed(2);
+    const st=gst();
+    document.getElementById('sn').textContent=st.n;
+    document.getElementById('sp').innerHTML=st.p.replace(/\n/g,'<br>');
+  });
+}
+bind('d','dv',v=>D=v); bind('r','rv',v=>R=v); bind('s','sv',v=>S=v);
+bind('h','hv',v=>{HRV=v;});
+bind('t','tv',v=>{TEMP=v;});
+bind('o','ov',v=>{ONSET=v;});
+bind('w','wv',v=>{WAKE=v;});
+bind('a','av',v=>{STEPS=v;});
+const s0=gst();
+document.getElementById('sn').textContent=s0.n;
+document.getElementById('sp').innerHTML=s0.p.replace(/\n/g,'<br>');
+document.getElementById('btn-rec').addEventListener('click',recordNight);
+document.getElementById('btn-bad').addEventListener('click',simulateBadNight);
+document.getElementById('btn-clr').addEventListener('click',clearMem);
+updateMemUI();
+draw();
+
+// ── UI MODE TOGGLE ──
+(function(){
+  const proto = document.getElementById('proto');
+  const btn   = document.getElementById('mode-btn');
+  if(!proto||!btn) return;
+  let open = false;
+  btn.addEventListener('click', function(e){
+    e.stopPropagation();
+    open = !open;
+    proto.classList.toggle('open', open);
+    btn.textContent = open ? '× close' : '⊹ parameters';
+  });
+})();
+
+function updateExMem(){
+  const n = MEM._nights||0;
+  const el = document.getElementById('ex-mem');
+  if(el) el.textContent = n>0 ? 'slow tissue memory · '+n+' night'+(n>1?'s':'')+' recorded' : '';
+}
+
+</script>
+</body>
+</html>
