@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dream Biology</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Space+Mono:wght@400&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#000;color:#fff;font-family:'Space Mono',monospace;overflow:hidden;}
+  .wrap{display:flex;width:100vw;height:100vh;align-items:center;justify-content:center;position:relative;opacity:0;transition:opacity .4s ease;}
+  #c{display:block;position:absolute;top:0;left:0;opacity:0;transition:opacity .6s ease;}
+  .hint{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,.15);letter-spacing:.15em;z-index:10;pointer-events:none;opacity:0;transition:opacity .4s ease;}
+  .exhibit{position:fixed;top:28px;left:32px;max-width:280px;pointer-events:none;z-index:10;opacity:0;transition:opacity .4s ease;}
+  .ex-title{font-family:'EB Garamond',serif;font-style:italic;font-size:28px;color:rgba(255,255,255,.75);letter-spacing:.03em;line-height:1.1;}
+  .ex-title-row{display:flex;align-items:flex-start;gap:18px;}
+  .ex-back-btn{
+    background:none;border:none;padding:0;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+    opacity:0;pointer-events:none;transition:opacity .4s ease;
+  }
+  .ex-back-btn.visible{opacity:1;pointer-events:all;}
+  .ex-back-btn:hover .ex-back-icon{color:rgba(255,255,255,.65);}
+  .ex-back-btn:hover .ex-back-label{color:rgba(255,255,255,.45);}
+  .ex-back-icon{
+    font-size:22px;color:rgba(255,255,255,.32);
+    line-height:1;transition:color .2s;
+  }
+  .ex-back-label{
+    font-family:'Space Mono',monospace;font-size:6.5px;
+    letter-spacing:.14em;color:rgba(255,255,255,.18);
+    transition:color .2s;white-space:nowrap;
+  }
+  .ex-sub{font-size:7.5px;letter-spacing:.22em;color:rgba(255,255,255,.18);text-transform:uppercase;margin:5px 0 20px;}
+  /* organism name — 主角，最大 */
+  .ex-state .sn{font-family:'EB Garamond',serif;font-style:italic;font-size:22px;color:rgba(255,255,255,.82);margin-bottom:8px;line-height:1.2;}
+  /* organism state 三行诗 — 比 name 小，比 L1 小 */
+  .ex-state .sp{font-family:'EB Garamond',serif;font-style:italic;font-size:11px;color:rgba(255,255,255,.32);line-height:1.9;letter-spacing:.01em;}
+  .ex-mem{margin-top:16px;font-size:8px;letter-spacing:.1em;color:rgba(255,255,255,.18);}
+
+  /* ── THREE-LAYER DIAGNOSIS ───────────────────────── */
+  .diagnosis{
+    margin-top:24px;
+    pointer-events:auto;
+    border-top:1px solid rgba(255,255,255,.07);
+    padding-top:20px;
+  }
+
+  /* Layer 1 — 一句话，直击，比 name 略小 */
+  .diag-l1{
+    font-family:'EB Garamond',serif;font-style:italic;
+    font-size:15px;color:rgba(255,255,255,.82);
+    line-height:1.6;
+    margin-bottom:14px;
+  }
+
+  /* Layer 2 — 两句话，最小，退到背景 */
+  .diag-l2{
+    font-family:'EB Garamond',serif;font-style:italic;
+    font-size:11px;color:rgba(255,255,255,.28);
+    line-height:1.85;
+    margin-bottom:18px;
+  }
+
+  /* Layer 3 — Raw Metrics (collapsed by default, expand on click) */
+  .diag-l3-toggle{
+    display:flex;align-items:center;gap:8px;
+    cursor:pointer;pointer-events:auto;
+    font-family:'Space Mono',monospace;font-size:7.5px;
+    letter-spacing:.18em;color:rgba(255,255,255,.18);
+    text-transform:uppercase;margin-bottom:0;
+    border:none;background:none;padding:0;
+    transition:color .2s;
+  }
+  .diag-l3-toggle:hover{color:rgba(255,255,255,.45);}
+  .diag-l3-toggle .tog-arrow{
+    display:inline-block;transition:transform .25s ease;font-style:normal;
+  }
+  .diag-l3-toggle.open .tog-arrow{transform:rotate(90deg);}
+  .diag-l3-metrics{
+    max-height:0;overflow:hidden;
+    transition:max-height .35s ease, opacity .3s ease;
+    opacity:0;
+  }
+  .diag-l3-metrics.open{max-height:200px;opacity:1;}
+  .metric-row{
+    display:flex;justify-content:space-between;align-items:baseline;
+    padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);
+    padding-left:12px;
+  }
+  .metric-row:last-child{border-bottom:none;}
+  .metric-name{
+    font-family:'EB Garamond',serif;font-style:italic;
+    font-size:11px;color:rgba(255,255,255,.3);
+  }
+  .metric-val{
+    font-family:'Space Mono',monospace;font-size:8px;
+    color:rgba(255,255,255,.2);letter-spacing:.06em;
+  }
+  .metric-bar{
+    flex:1;margin:0 10px;height:1px;
+    background:rgba(255,255,255,.07);position:relative;top:-1px;
+  }
+  .metric-bar-fill{height:100%;background:rgba(255,255,255,.2);transition:width .6s ease;}
+
+  /* fade-in animation for layers */
+  .diag-l1, .diag-l2{
+    opacity:0;transform:translateY(4px);
+    transition:opacity .5s ease, transform .5s ease;
+  }
+  .diag-l1.revealed{opacity:1;transform:translateY(0);}
+  .diag-l2.revealed{opacity:1;transform:translateY(0);transition-delay:.15s;}
+  .diag-l3-toggle.revealed{opacity:1;}
+  .diag-l3-toggle{opacity:0;transition:opacity .4s ease .3s;}
+  #panel-tab{position:fixed;left:28px;bottom:28px;writing-mode:horizontal-tb;height:auto;display:flex;align-items:center;gap:7px;font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.16em;color:rgba(255,255,255,.28);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);padding:7px 12px;cursor:pointer;z-index:60;transition:all .25s;opacity:0;}
+  #panel-tab:hover{color:rgba(255,255,255,.7);background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.22);}
+  #panel-close-tab{position:fixed;left:28px;bottom:28px;writing-mode:horizontal-tb;height:auto;display:flex;align-items:center;gap:7px;font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.16em;color:rgba(255,255,255,.28);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);padding:7px 12px;cursor:pointer;z-index:60;transition:all .25s;opacity:0;pointer-events:none;}
+  #panel-close-tab:hover{color:rgba(255,255,255,.7);background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.22);}
+  #panel-close-tab.visible{opacity:1;pointer-events:all;}
+  #panel-close{position:absolute;top:22px;right:18px;background:none;border:none;color:rgba(255,255,255,.2);font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.18em;line-height:32px;cursor:pointer;transition:color .2s;padding:0;}
+  #panel-close:hover{color:rgba(255,255,255,.6);}
+  .proto{position:fixed;top:0;right:0;bottom:0;width:290px;background:rgba(2,2,10,.92);border-left:1px solid rgba(255,255,255,.06);padding:22px 18px;overflow-y:auto;transform:translateX(100%);transition:transform .35s ease;z-index:50;}
+  .proto.open{transform:translateX(0);}
+  .proto-hd{font-size:8px;letter-spacing:.2em;color:rgba(255,255,255,.25);text-transform:uppercase;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:18px;}
+  .ctrl{margin-bottom:16px;}
+  .ct{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1px;}
+  .cn{font-family:'EB Garamond',serif;font-style:italic;font-size:15px;color:rgba(255,255,255,.78);}
+  .cv{font-size:9px;color:rgba(255,255,255,.3);}
+  .ch{font-size:7.5px;letter-spacing:.08em;color:rgba(255,255,255,.2);margin-bottom:5px;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:1px;background:rgba(255,255,255,.14);outline:none;border:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.55);cursor:pointer;}
+  .rc input::-webkit-slider-thumb{background:rgba(155,110,255,.85);}
+  .sc input::-webkit-slider-thumb{background:rgba(220,75,115,.8);}
+  .membox{margin:18px 0 14px;padding:14px 0 0;border-top:1px solid rgba(255,255,255,.06);}
+  .memtxt{font-size:8px;color:rgba(255,255,255,.25);line-height:1.7;margin-bottom:9px;}
+  .membtns{display:flex;gap:5px;flex-wrap:wrap;}
+  .membtn{background:none;border:1px solid rgba(255,255,255,.13);color:rgba(255,255,255,.4);font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.08em;padding:5px 9px;cursor:pointer;border-radius:1px;}
+  .membtn:hover{border-color:rgba(255,255,255,.38);color:rgba(255,255,255,.75);}
+
+  /* ── ONBOARDING OVERLAYS ───────────────────────────── */
+  .fs-overlay{
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    background:#000;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    z-index:200;
+    transition:opacity .4s ease;
+  }
+  .fs-content{
+    display:flex;flex-direction:column;
+    align-items:center;gap:16px;
+    max-width:360px;width:90%;text-align:center;
+  }
+  .fs-big-title{
+    font-family:'EB Garamond',serif;font-style:italic;
+    font-size:72px;color:rgba(255,255,255,.85);
+    letter-spacing:.02em;line-height:1.05;
+    white-space:nowrap;
+  }
+  .fs-label{
+    font-family:'Space Mono',monospace;font-size:9px;
+    letter-spacing:.2em;color:rgba(255,255,255,.28);
+    text-transform:uppercase;margin-bottom:4px;
+  }
+  .fs-greeting{
+    font-family:'EB Garamond',serif;font-style:italic;
+    font-size:38px;color:rgba(255,255,255,.78);
+    letter-spacing:.03em;margin-bottom:4px;
+  }
+  .fs-input{
+    width:100%;background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.12);
+    color:rgba(255,255,255,.7);
+    font-family:'Space Mono',monospace;font-size:11px;
+    padding:12px 14px;outline:none;border-radius:2px;
+    letter-spacing:.05em;
+  }
+  .fs-input:focus{border-color:rgba(255,255,255,.26);}
+  .fs-textarea{
+    width:100%;background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.12);
+    color:rgba(255,255,255,.7);
+    font-family:'EB Garamond',serif;font-style:italic;font-size:15px;
+    padding:14px 16px;outline:none;border-radius:2px;
+    resize:none;height:108px;line-height:1.65;
+  }
+  .fs-textarea:focus{border-color:rgba(255,255,255,.26);}
+  .fs-textarea::placeholder{color:rgba(255,255,255,.2);}
+  .fs-btn-primary{
+    width:100%;background:rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.18);
+    color:rgba(255,255,255,.6);
+    font-family:'Space Mono',monospace;font-size:9px;
+    letter-spacing:.2em;
+    padding:11px 28px;cursor:pointer;border-radius:2px;
+    transition:all .25s;
+  }
+  .fs-btn-primary:hover{background:rgba(255,255,255,.13);color:rgba(255,255,255,.9);border-color:rgba(255,255,255,.32);}
+  .fs-btn-secondary{
+    width:100%;background:none;
+    border:1px solid rgba(255,255,255,.09);
+    color:rgba(255,255,255,.28);
+    font-family:'Space Mono',monospace;font-size:9px;
+    letter-spacing:.14em;
+    padding:9px 20px;cursor:pointer;border-radius:2px;
+    transition:all .25s;
+  }
+  .fs-btn-secondary:hover{border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.55);}
+  .fs-note{
+    font-family:'Space Mono',monospace;font-size:8px;
+    color:rgba(255,255,255,.16);letter-spacing:.07em;line-height:1.65;
+    margin-top:-4px;
+  }
+  .fs-tagline{
+    font-family:'EB Garamond',serif;font-style:italic;
+    font-size:20px;color:rgba(255,255,255,.52);
+    letter-spacing:.02em;line-height:1.5;
+    margin-top:-4px;white-space:nowrap;
+  }
+  .fs-tagline-sub{
+    font-family:'Space Mono',monospace;font-size:8px;
+    color:rgba(255,255,255,.22);letter-spacing:.08em;line-height:1.7;
+    margin-top:-8px;
+  }
+  .fs-tagline-ritual{
+    font-family:'EB Garamond',serif;font-style:italic;
+    font-size:13px;color:rgba(255,255,255,.32);
+    letter-spacing:.04em;margin-top:-10px;
+  }
+  /* Detected Signals */
+  .ds-label{
+    font-family:'Space Mono',monospace;font-size:7.5px;
+    letter-spacing:.2em;color:rgba(255,255,255,.18);
+    text-transform:uppercase;margin-bottom:10px;
+  }
+  .ds-row{
+    display:flex;align-items:baseline;gap:0;
+    padding:2px 0;font-family:'EB Garamond',serif;font-style:italic;
+    font-size:10px;line-height:1.8;
+  }
+  .ds-input{color:rgba(255,255,255,.38);}
+  .ds-arrow{color:rgba(255,255,255,.14);margin:0 7px;font-style:normal;font-family:'Space Mono',monospace;font-size:8px;}
+  .ds-effect{color:rgba(255,255,255,.22);}
+  .fs-forming{
+    font-family:'EB Garamond',serif;font-style:italic;
+    font-size:22px;color:rgba(255,255,255,.42);
+    letter-spacing:.1em;
+  }
+
+  /* ── APPLE HEALTH MODAL ───────────────────────────── */
+  .health-modal{
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    background:rgba(0,0,0,.88);
+    display:none;align-items:center;justify-content:center;
+    z-index:300;opacity:0;transition:opacity .4s ease;
+  }
+  .modal-box{
+    display:flex;flex-direction:column;align-items:center;gap:16px;
+    max-width:310px;width:90%;text-align:center;
+    padding:40px 32px;
+    border:1px solid rgba(255,255,255,.08);
+    background:rgba(3,3,18,.97);
+  }
+  .modal-title{
+    font-family:'EB Garamond',serif;font-style:italic;
+    font-size:20px;color:rgba(255,255,255,.75);
+    letter-spacing:.02em;
+  }
+  .modal-sub{
+    font-family:'EB Garamond',serif;font-style:italic;
+    font-size:13px;color:rgba(255,255,255,.32);line-height:1.7;
+  }
+  .modal-close{
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.14);
+    color:rgba(255,255,255,.5);
+    font-family:'Space Mono',monospace;font-size:9px;
+    letter-spacing:.18em;text-transform:uppercase;
+    padding:9px 26px;cursor:pointer;border-radius:2px;
+    transition:all .25s;margin-top:4px;
+  }
+  .modal-close:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.85);}
+
+  /* ── INTERPRETATION + ERROR ───────────────────────── */
+  #interpretation{
+    font-family:'EB Garamond',serif;font-style:italic;
+    font-size:12px;color:rgba(255,255,255,.3);
+    line-height:1.75;margin-top:14px;max-width:300px;
+  }
+  #error-banner{
+    display:none;position:fixed;
+    bottom:42px;left:50%;transform:translateX(-50%);
+    font-size:8.5px;color:rgba(255,255,255,.26);
+    letter-spacing:.1em;font-family:'Space Mono',monospace;
+    z-index:20;pointer-events:none;white-space:nowrap;
+  }
+
+  /* ── BOTTOM ACTION BAR ───────────────────────────── */
+  #action-bar{
+    position:fixed;bottom:32px;right:20px;
+    display:flex;flex-direction:column;gap:10px;align-items:flex-end;
+    z-index:40;opacity:0;transition:opacity .4s ease;pointer-events:none;
+  }
+  #action-bar.visible{opacity:1;pointer-events:all;}
+  .action-btn{
+    background:none;
+    border:none;
+    color:rgba(255,255,255,.18);
+    font-family:'Space Mono',monospace;font-size:7px;
+    letter-spacing:.2em;text-transform:uppercase;
+    padding:2px 0;cursor:pointer;
+    transition:color .2s;white-space:nowrap;text-align:right;
+  }
+  .action-btn:hover{color:rgba(255,255,255,.55);}
+
+  /* ── HISTORY PANEL ───────────────────────────────── */
+  #history-panel{
+    position:fixed;bottom:0;left:0;right:0;
+    height:190px;background:rgba(1,1,10,.96);
+    border-top:1px solid rgba(255,255,255,.06);
+    transform:translateY(100%);transition:transform .38s ease;
+    z-index:55;padding:18px 24px 14px;
+  }
+  #history-panel.open{transform:translateY(0);}
+  .hist-hd{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:14px;
+  }
+  .hist-title{font-size:8px;letter-spacing:.22em;color:rgba(255,255,255,.22);text-transform:uppercase;}
+  .hist-close{background:none;border:none;color:rgba(255,255,255,.2);font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.12em;cursor:pointer;transition:color .2s;}
+  .hist-close:hover{color:rgba(255,255,255,.6);}
+  #hist-track{
+    display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;
+    scrollbar-width:none;
+  }
+  #hist-track::-webkit-scrollbar{display:none;}
+  .hist-entry{
+    flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:5px;
+    cursor:pointer;
+  }
+  .hist-orb{
+    width:48px;height:48px;border-radius:50%;
+    border:1px solid rgba(255,255,255,.12);
+    display:flex;align-items:center;justify-content:center;
+    position:relative;overflow:hidden;transition:border-color .2s;
+  }
+  .hist-entry:hover .hist-orb{border-color:rgba(255,255,255,.35);}
+  .hist-orb canvas{position:absolute;top:0;left:0;}
+  .hist-date{font-family:'Space Mono',monospace;font-size:6.5px;color:rgba(255,255,255,.22);letter-spacing:.06em;}
+  .hist-name{font-family:'EB Garamond',serif;font-style:italic;font-size:9px;color:rgba(255,255,255,.45);max-width:66px;text-align:center;line-height:1.3;}
+  .hist-empty{font-family:'EB Garamond',serif;font-style:italic;font-size:14px;color:rgba(255,255,255,.18);align-self:center;}
+
+  /* ── SHARE TOAST ─────────────────────────────────── */
+  #share-toast{
+    position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(12px);
+    background:rgba(8,8,30,.95);border:1px solid rgba(255,255,255,.1);
+    color:rgba(255,255,255,.55);font-family:'Space Mono',monospace;
+    font-size:8px;letter-spacing:.12em;padding:9px 18px;
+    opacity:0;transition:all .3s ease;pointer-events:none;z-index:80;
+    white-space:nowrap;
+  }
+  #share-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ── RE-DREAM OVERLAY ────────────────────────────── */
+
+  /* ── ECHO MODE BADGE ─────────────────────────────── */
+  #echo-badge{
+    position:fixed;top:28px;left:50%;transform:translateX(-50%);
+    background:rgba(148,88,205,.18);border:1px solid rgba(148,88,205,.35);
+    color:rgba(195,155,248,.7);font-family:'Space Mono',monospace;
+    font-size:7.5px;letter-spacing:.18em;text-transform:uppercase;
+    padding:6px 14px;z-index:40;
+    opacity:0;pointer-events:none;transition:opacity .3s;
+  }
+  #echo-badge.visible{opacity:1;}
+  #echo-tip{
+    position:fixed;top:54px;left:50%;transform:translateX(-50%);
+    color:rgba(195,155,248,.5);font-family:'EB Garamond',serif;font-style:italic;
+    font-size:11px;letter-spacing:.04em;
+    opacity:0;pointer-events:none;transition:opacity .4s ease;z-index:40;
+    white-space:nowrap;
+  }
+  #echo-tip.visible{opacity:1;}
+</style>
+</head>
+<body>
+
+<!-- ══ LANDING SCREEN ══════════════════════════════════ -->
+<div id="screen-landing" class="fs-overlay">
+  <div class="fs-content">
+    <div class="fs-big-title">Dream Biology</div>
+    <div class="fs-tagline">Every night, your sleep becomes a living organism.</div>
+    <div class="fs-tagline-sub">Each night leaves a trace in the organism.</div>
+    <button id="btn-sample" class="fs-btn-primary">Grow a Sample Organism</button>
+    <button id="btn-own-key" class="fs-btn-secondary">Use My Own Night with API Key</button>
+  </div>
+</div>
+
+<!-- ══ API KEY SCREEN ══════════════════════════════════ -->
+<div id="screen-api" class="fs-overlay" style="display:none;opacity:0;">
+  <div class="fs-content">
+    <div class="fs-big-title">Dream Biology</div>
+    <div class="fs-tagline">Enter your Anthropic API key.</div>
+    <div class="fs-tagline-sub">Your key is stored locally and never sent anywhere except Anthropic's API.</div>
+    <input type="password" id="api-key-input" class="fs-input" placeholder="sk-ant-...">
+    <button id="api-key-btn" class="fs-btn-primary">Continue</button>
+    <button id="btn-back-to-landing" class="fs-btn-secondary">← Back</button>
+  </div>
+</div>
+
+<!-- ══ MORNING RITUAL SCREEN ══════════════════════════ -->
+<div id="screen-ritual" class="fs-overlay" style="display:none;opacity:0;">
+  <div class="fs-content">
+    <div class="fs-greeting" id="greeting">Good morning.</div>
+    <div class="fs-tagline-ritual">Describe last night in a few words.</div>
+    <textarea id="sleep-input" class="fs-textarea" placeholder="e.g. fell asleep at 1am, woke up twice, dreaming a lot"></textarea>
+    <button id="btn-grow" class="fs-btn-primary">Grow Tonight's Organism</button>
+    <button id="btn-apple-health" class="fs-btn-secondary">↗ Import from Apple Health</button>
+  </div>
+</div>
+
+<!-- ══ LOADING SCREEN ═════════════════════════════════ -->
+<div id="screen-loading" class="fs-overlay" style="display:none;opacity:0;">
+  <div class="fs-forming">organism forming...</div>
+</div>
+
+<!-- ══ APPLE HEALTH MODAL ════════════════════════════ -->
+<div id="modal-health" class="health-modal" style="display:none;">
+  <div class="modal-box">
+    <div class="modal-title">Apple Health integration coming soon.</div>
+    <div class="modal-sub">For now, just describe your night in your own words — the organism understands.</div>
+    <button id="btn-close-health" class="modal-close">Close</button>
+  </div>
+</div>
+
+<!-- ══ ERROR BANNER ═══════════════════════════════════ -->
+<div id="error-banner">could not reach the network — showing last known form</div>
+
+<!-- ══ MAIN APP (hidden until after ritual) ══════════ -->
+<div class="wrap">
+  <canvas id="c"></canvas>
+</div>
+<div class="hint">touch to interact · drag to rotate · scroll to zoom</div>
+<div class="exhibit">
+  <div class="ex-title-row">
+    <div class="ex-title">Dream Biology</div>
+    <button id="redream-btn" class="ex-back-btn"><span class="ex-back-icon">↺</span><span class="ex-back-label">new night</span></button>
+  </div>
+  <div class="ex-sub">organism reading</div>
+  <div class="ex-state">
+    <div class="sn" id="sn">Bioluminescent Bloom</div>
+    <div class="sp" id="sp">dreaming inside the dream<br>organ light stable<br>something forming</div>
+  </div>
+  <div class="ex-mem" id="ex-mem"></div>
+
+  <!-- THREE-LAYER DIAGNOSIS -->
+  <div class="diagnosis" id="diagnosis" style="display:none;">
+
+    <!-- Layer 1: Emotional Read -->
+    <div class="diag-l1" id="diag-l1"></div>
+
+    <!-- Layer 2: Biological Translation -->
+    <div class="diag-l2" id="diag-l2"></div>
+
+    <!-- Layer 3: Raw Metrics (collapsed) -->
+    <button class="diag-l3-toggle" id="diag-l3-toggle">
+      <span class="tog-arrow">›</span>
+      <span>raw metrics</span>
+    </button>
+    <div class="diag-l3-metrics" id="diag-l3-metrics">
+      <div class="metric-row"><span class="metric-name">deep sleep</span><div class="metric-bar"><div class="metric-bar-fill" id="mb-d"></div></div><span class="metric-val" id="mv-d">—</span></div>
+      <div class="metric-row"><span class="metric-name">REM</span><div class="metric-bar"><div class="metric-bar-fill" id="mb-r"></div></div><span class="metric-val" id="mv-r">—</span></div>
+      <div class="metric-row"><span class="metric-name">HRV</span><div class="metric-bar"><div class="metric-bar-fill" id="mb-h"></div></div><span class="metric-val" id="mv-h">—</span></div>
+      <div class="metric-row"><span class="metric-name">stress</span><div class="metric-bar"><div class="metric-bar-fill" id="mb-s"></div></div><span class="metric-val" id="mv-s">—</span></div>
+      <div class="metric-row"><span class="metric-name">wake count</span><div class="metric-bar"><div class="metric-bar-fill" id="mb-w"></div></div><span class="metric-val" id="mv-w">—</span></div>
+      <div class="metric-row"><span class="metric-name">sleep latency</span><div class="metric-bar"><div class="metric-bar-fill" id="mb-o"></div></div><span class="metric-val" id="mv-o">—</span></div>
+    </div>
+  </div>
+
+  <!-- DETECTED SIGNALS -->
+  <div id="detected-signals" style="display:none;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.07);">
+    <div class="ds-label">detected signals</div>
+    <div id="ds-list"></div>
+  </div>
+
+  <div id="interpretation" style="display:none;"></div>
+</div>
+<div class="proto" id="proto">
+  <div class="proto-hd">prototype · parameters</div>
+  <button id="panel-close">× close</button>
+  <div class="ctrl"><div class="ct"><span class="cn">deep sleep</span><span class="cv" id="dv">0.93</span></div><div class="ch">bell density · core glow</div><input type="range" min="0" max="1" step=".01" value=".93" id="d"></div>
+  <div class="ctrl rc"><div class="ct"><span class="cn">REM</span><span class="cv" id="rv">0.87</span></div><div class="ch">tentacle reach · light pulse speed</div><input type="range" min="0" max="1" step=".01" value=".87" id="r"></div>
+  <div class="ctrl sc"><div class="ct"><span class="cn">stress residue</span><span class="cv" id="sv">0.38</span></div><div class="ch">amber fracture · contraction</div><input type="range" min="0" max="1" step=".01" value=".38" id="s"></div>
+  <div class="ctrl"><div class="ct"><span class="cn">HRV</span><span class="cv" id="hv">0.85</span></div><div class="ch">rhythm quality · whole-body flow</div><input type="range" min="0" max="1" step=".01" value=".85" id="h"></div>
+  <div class="ctrl"><div class="ct"><span class="cn">body temperature</span><span class="cv" id="tv">0.28</span></div><div class="ch">local heat · warm↔cold</div><input type="range" min="0" max="1" step=".01" value=".28" id="t"></div>
+  <div class="ctrl"><div class="ct"><span class="cn">sleep latency</span><span class="cv" id="ov">0.58</span></div><div class="ch">arrival delay · form completeness</div><input type="range" min="0" max="1" step=".01" value=".58" id="o"></div>
+  <div class="ctrl"><div class="ct"><span class="cn">wake count</span><span class="cv" id="wv">0.81</span></div><div class="ch">tentacle rupture · node breaks</div><input type="range" min="0" max="1" step=".01" value=".81" id="w"></div>
+  <div class="ctrl"><div class="ct"><span class="cn">day residue</span><span class="cv" id="av">0.55</span></div><div class="ch">day exertion · orbit weight</div><input type="range" min="0" max="1" step=".01" value=".55" id="a"></div>
+  <div class="membox">
+    <div class="memtxt" id="memtxt">loading memory...</div>
+    <div class="membtns">
+      <button class="membtn" id="btn-rec">record tonight</button>
+      <button class="membtn" id="btn-bad">bad night</button>
+      <button class="membtn" id="btn-clr">clear</button>
+    </div>
+  </div>
+</div>
+<div id="panel-tab">⊹ explore organism</div>
+<div id="panel-close-tab">× close</div>
+
+<!-- ══ ECHO BADGE ════════════════════════════════ -->
+<div id="echo-badge">◈ dream echo active</div>
+<div id="echo-tip">blends tonight with your organism's long-term memory</div>
+
+<!-- ══ ACTION BAR ════════════════════════════════ -->
+<div id="action-bar">
+  <button class="action-btn" id="btn-share">↗ save image</button>
+  <button class="action-btn" id="btn-history">◷ history</button>
+  <button class="action-btn" id="btn-echo">◈ echo mode</button>
+</div>
+
+<!-- ══ HISTORY PANEL ══════════════════════════════ -->
+<div id="history-panel">
+  <div class="hist-hd">
+    <span class="hist-title">sleep archive · recent nights</span>
+    <button class="hist-close" id="hist-close-btn">× close</button>
+  </div>
+  <div id="hist-track"></div>
+</div>
+
+<!-- ══ SHARE TOAST ════════════════════════════════ -->
+<div id="share-toast">image saved to downloads</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  CANVAS SETUP — full viewport
+// ═══════════════════════════════════════════════════
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H, CX, CY;
+function resize(){
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  CX = W/2; CY = H * .42;
+}
+resize();
+window.addEventListener('resize', resize);
+const PI2 = Math.PI * 2;
+
+// ═══════════════════════════════════════════════════
+//  SLEEP PARAMS
+// ═══════════════════════════════════════════════════
+let D=.93, R=.87, S=.38, T=0;
+let HRV=.85, TEMP=.28, ONSET=.58, WAKE=.81, STEPS=.55;
+
+// ═══════════════════════════════════════════════════
+//  MEMORY
+// ═══════════════════════════════════════════════════
+function loadMem(){
+  try{ const raw=localStorage.getItem('dream-bio-mem-v1'); if(raw){ const m=JSON.parse(raw); const cl=v=>Math.max(0,Math.min(1,v??0)); return {d:cl(m.d),r:cl(m.r),s:cl(m.s),hrv:cl(m.hrv),temp:cl(m.temp),onset:cl(m.onset),wake:cl(m.wake),steps:cl(m.steps),nights:m.nights||1}; } }catch(e){}
+  return {d:.93,r:.87,s:.38,hrv:.85,temp:.28,onset:.58,wake:.81,steps:.55,nights:1};
+}
+function saveMem(){ try{localStorage.setItem('dream-bio-mem-v1',JSON.stringify(MEM));}catch(e){} }
+function recordNight(){ const w=.18,cl=v=>Math.max(0,Math.min(1,v)); MEM.d=cl(MEM.d*(1-w)+D*w); MEM.r=cl(MEM.r*(1-w)+R*w); MEM.s=cl(MEM.s*(1-w)+S*w); MEM.hrv=cl(MEM.hrv*(1-w)+HRV*w); MEM.temp=cl(MEM.temp*(1-w)+TEMP*w); MEM.onset=cl(MEM.onset*(1-w)+ONSET*w); MEM.wake=cl(MEM.wake*(1-w)+WAKE*w); MEM.steps=cl(MEM.steps*(1-w)+STEPS*w); MEM.nights=(MEM.nights||1)+1; saveMem(); updateMemUI(); }
+function simulateBadNight(){ MEM.d=Math.max(0,MEM.d-.18); MEM.r=Math.min(1,MEM.r+.12); MEM.s=Math.min(1,MEM.s+.22); MEM.wake=Math.min(1,MEM.wake+.25); MEM.hrv=Math.max(0,MEM.hrv-.15); MEM.onset=Math.min(1,MEM.onset+.2); saveMem(); updateMemUI(); }
+function clearMem(){ MEM={d:.93,r:.87,s:.38,hrv:.85,temp:.28,onset:.58,wake:.81,steps:.55,nights:1}; saveMem(); updateMemUI(); }
+function updateMemUI(){ const el=document.getElementById('memtxt'); if(!el) return; const n=MEM.nights||1; el.textContent=`${n} night${n>1?'s':''} remembered · deep ${MEM.d.toFixed(2)} · rem ${MEM.r.toFixed(2)} · stress ${MEM.s.toFixed(2)}`; }
+let MEM=loadMem();
+
+// ═══════════════════════════════════════════════════
+//  TRUE 3D ROTATION — Euler XY (replaces fake proj)
+// ═══════════════════════════════════════════════════
+let rotX = 0.25, rotY = 0.1;
+let floatY = 0;
+// Zoom via FOV scale
+let zoomScale = 1.0;
+const FOV = 560;
+
+// Full 3D rotation matrix: Y-axis then X-axis, then perspective
+function proj(x, y, z){
+  // Rotate Y
+  const cy=Math.cos(rotY), sy=Math.sin(rotY);
+  const x1=x*cy - z*sy;
+  const z1=x*sy + z*cy;
+  // Rotate X
+  const cx2=Math.cos(rotX), sx2=Math.sin(rotX);
+  const y2=y*cx2 - z1*sx2;
+  const z2=y*sx2 + z1*cx2;
+  // Perspective
+  const d = FOV + z2 + 320;
+  if(d < 1) return null;
+  const sc = (FOV / d) * zoomScale;
+  return { px: CX + x1*sc, py: CY + floatY + y2*sc, sc, z: z2 };
+}
+
+// ═══════════════════════════════════════════════════
+//  DRAG + SCROLL ROTATION
+// ═══════════════════════════════════════════════════
+let isDrag=false, dragX=0, dragY=0;
+// Mouse position for tentacle interaction
+let mouseX=CX, mouseY=CY, mouseActive=false;
+// Per-tentacle smoothed deflection state [deflX, deflY, velX, velY]
+const tentDefl=[];
+canvas.addEventListener('mousemove', e=>{ mouseX=e.clientX; mouseY=e.clientY; mouseActive=true; });
+canvas.addEventListener('mouseleave',()=>{ mouseActive=false; });
+canvas.addEventListener('mousedown',  e=>{ isDrag=true; dragX=e.clientX; dragY=e.clientY; });
+window.addEventListener('mousemove',  e=>{ if(!isDrag) return; rotY+=(e.clientX-dragX)*.005; rotX+=(e.clientY-dragY)*.004; rotX=Math.max(-.9,Math.min(1.4,rotX)); dragX=e.clientX; dragY=e.clientY; });
+window.addEventListener('mouseup',    ()=>isDrag=false);
+canvas.addEventListener('touchstart', e=>{ isDrag=true; dragX=e.touches[0].clientX; dragY=e.touches[0].clientY; e.preventDefault(); },{passive:false});
+canvas.addEventListener('touchmove',  e=>{ if(!isDrag) return; rotY+=(e.touches[0].clientX-dragX)*.005; rotX+=(e.touches[0].clientY-dragY)*.004; rotX=Math.max(-.9,Math.min(1.4,rotX)); dragX=e.touches[0].clientX; dragY=e.touches[0].clientY; e.preventDefault(); },{passive:false});
+canvas.addEventListener('touchend',   ()=>isDrag=false);
+window.addEventListener('wheel', e=>{ zoomScale=Math.max(.35,Math.min(2.8,zoomScale-e.deltaY*.001)); },{passive:true});
+
+// ═══════════════════════════════════════════════════
+//  AUDIO — wind chime / breathing response
+// ═══════════════════════════════════════════════════
+let audioCtx=null, reverbNode=null, masterGain=null;
+
+function initAudio(){
+  if(audioCtx) return;
+  audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+
+  // Master gain — quiet and intimate
+  masterGain = audioCtx.createGain();
+  masterGain.gain.setValueAtTime(0.13, audioCtx.currentTime);
+  masterGain.connect(audioCtx.destination);
+
+  // Convolution reverb — long, diffuse, cave-like
+  const revLen = audioCtx.sampleRate * 3.8;
+  const revBuf = audioCtx.createBuffer(2, revLen, audioCtx.sampleRate);
+  for(let c=0;c<2;c++){
+    const d=revBuf.getChannelData(c);
+    for(let i=0;i<revLen;i++){
+      // exponential decay noise — warm, not metallic
+      d[i]=(Math.random()*2-1)*Math.pow(1-i/revLen, 2.2);
+    }
+  }
+  reverbNode = audioCtx.createConvolver();
+  reverbNode.buffer = revBuf;
+  reverbNode.connect(masterGain);
+}
+
+// Pentatonic scale frequencies — always consonant, never jarring
+// Based on D minor pentatonic, spread across 3 octaves
+const CHIME_FREQS = [
+  146.83, 174.61, 196.00, 220.00, 261.63,  // D3 F3 G3 A3 C4
+  293.66, 349.23, 392.00, 440.00, 523.25,  // D4 F4 G4 A4 C5
+  587.33, 698.46, 783.99, 880.00, 1046.50  // D5 F5 G5 A5 C6
+];
+
+// Cooldown per tentacle so it doesn't spam
+const tentSound = {}; // idx → last trigger time
+
+function playChime(idx, theta, intensity){
+  if(!audioCtx || audioCtx.state==='suspended') return;
+  const now = audioCtx.currentTime;
+  if(tentSound[idx] && now - tentSound[idx] < 0.38) return; // min gap
+  tentSound[idx] = now;
+
+  // Choose freq from pentatonic — map theta around the circle to scale degree
+  const degree = Math.floor(((theta % (Math.PI*2)) / (Math.PI*2)) * CHIME_FREQS.length);
+  const baseFreq = CHIME_FREQS[Math.max(0, Math.min(CHIME_FREQS.length-1, degree))];
+  // slight random detune — organic, not mechanical
+  const freq = baseFreq * (1 + (Math.random()-.5)*0.012);
+
+  const vol = 0.18 + intensity * 0.22;
+  const attack = 0.004;
+  const decay  = 0.18 + Math.random()*0.12;
+  const release= 1.1  + Math.random()*0.9;   // long tail
+
+  // Oscillator: sine + tiny bit of triangle for warmth
+  const osc1 = audioCtx.createOscillator();
+  const osc2 = audioCtx.createOscillator();
+  osc1.type = 'sine';
+  osc2.type = 'triangle';
+  osc1.frequency.value = freq;
+  osc2.frequency.value = freq * 2.003; // slight octave harmonic, detuned
+  osc2.frequency.value = freq;
+
+  const env  = audioCtx.createGain();
+  const env2 = audioCtx.createGain();
+  env.gain.setValueAtTime(0, now);
+  env.gain.linearRampToValueAtTime(vol, now+attack);
+  env.gain.setTargetAtTime(vol*0.35, now+attack+decay, decay*0.4);
+  env.gain.setTargetAtTime(0, now+attack+decay*2, release*0.5);
+
+  env2.gain.setValueAtTime(0, now);
+  env2.gain.linearRampToValueAtTime(vol*0.08, now+attack);
+  env2.gain.setTargetAtTime(0, now+attack+decay, release*0.3);
+
+  // Dry path (very quiet) + wet reverb path
+  const dryGain = audioCtx.createGain();
+  dryGain.gain.value = 0.06;
+
+  osc1.connect(env);
+  osc2.connect(env2);
+  env.connect(reverbNode);
+  env.connect(dryGain);
+  env2.connect(reverbNode);
+  dryGain.connect(masterGain);
+
+  osc1.start(now);
+  osc2.start(now);
+  osc1.stop(now + attack + decay*2 + release*2.5);
+  osc2.stop(now + attack + decay*2 + release*2.5);
+}
+
+// Init audio on first user gesture
+canvas.addEventListener('mousemove', ()=>{ if(!audioCtx) initAudio(); else if(audioCtx.state==='suspended') audioCtx.resume(); }, {once:false, passive:true});
+
+// ═══════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════
+function lerp(a,b,t){ return a+(b-a)*t; }
+function habs(n){ let v=(Math.sin(n*127.1+311.7)*43758.5453)%1; return v<0?-v:v; }
+function sn(x,y,z=0){ return Math.sin(x*1.9+y*2.7+z)*.36+Math.sin(x*3.3-y*1.6+z*1.8)*.30+Math.sin(x*5.1+y*.8-z*2.3)*.20+Math.sin(x*.7+y*5.2+z*.5)*.14; }
+function fbm(x,y,z=0,oct=4){ if(!isFinite(x)||!isFinite(y)) return 0; let v=0,a=.5,f=1; for(let i=0;i<oct;i++){v+=sn(x*f+z*.2,y*f-z*.17,i*1.45)*a;a*=.54;f*=2.1;} return v; }
+
+// ═══════════════════════════════════════════════════
+//  PALETTE (10 bands) + TEMP TINT
+// ═══════════════════════════════════════════════════
+function makePal(s){
+  const cold=[[28,14,80],[42,32,140],[38,85,175],[32,128,188],[42,168,165],[148,88,205],[195,125,232],[215,180,248],[228,218,252],[245,242,255]];
+  const warm=[[60,18,22],[108,32,28],[158,55,28],[195,105,35],[225,155,55],[240,190,85],[250,215,125],[252,232,165],[255,242,200],[255,250,235]];
+  if(s<.25) return cold;
+  if(s>.65) return warm;
+  const t=(s-.25)/.4;
+  return cold.map((c,i)=>c.map((v,j)=>Math.round(lerp(v,warm[i][j],t))));
+}
+
+// ═══════════════════════════════════════════════════
+//  STATES
+// ═══════════════════════════════════════════════════
+const STATES=[
+  {t:()=>S>.72,                       n:'Armored Fragment',       p:'too many edges\nnothing soft remaining\nstill watching'},
+  {t:()=>WAKE>.65&&D>.4,             n:'Fractured Sleeper',      p:'surface broken\nstill reaching through\nthirty-seven interruptions'},
+  {t:()=>D>.65&&R<.3&&HRV>.6,       n:'Phosphorescent Drifter', p:'slow breath\nlight gathers in the folds\nbody complete'},
+  {t:()=>R>.72&&D<.38,              n:'Neural Coral',           p:'filaments extending\nevery direction at once\nsleeping sideways'},
+  {t:()=>D>.55&&R>.5&&HRV>.55,      n:'Bioluminescent Bloom',   p:'dreaming inside the dream\norgan light stable\nsomething forming'},
+  {t:()=>TEMP>.7&&S>.3,             n:'Fever Organism',         p:'too warm to rest\nbody making something\nburning through the night'},
+  {t:()=>ONSET>.7&&WAKE>.4,         n:'Midnight Fugitive',      p:'late arrival\nbroken passage\nstill not fully here'},
+  {t:()=>S>.42&&R>.5,               n:'Jittering Larvae',       p:'antennae overextended\ncannot settle\nstill growing, barely'},
+  {t:()=>STEPS>.8&&D>.5,            n:'Exhausted Bloom',        p:'moved all day\nfinally still\ndeep and luminous'},
+  {t:()=>D<.28&&R<.28,              n:'Undeveloped Cyst',       p:'did not sleep long enough\nform incomplete\nwaiting for tomorrow'},
+  {t:()=>HRV<.3&&D>.5,             n:'Still Waters',           p:'heart barely varying\ndeeply anchored\nno ripple, no edge'},
+  {t:()=>true,                       n:'Soft Pelagic',           p:'between deep and bright\nbody in negotiation\nstill here'},
+];
+function gst(){ return STATES.find(x=>x.t()); }
+
+// ═══════════════════════════════════════════════════
+//  DRAW PRIMITIVES — identical to original
+// ═══════════════════════════════════════════════════
+function splat(px,py,rx,ry,col,alpha,rot){
+  if(!isFinite(px)||!isFinite(py)||!isFinite(rx)||!isFinite(alpha)) return;
+  if(alpha<.002||rx<.3) return;
+  ctx.save(); ctx.translate(px,py); ctx.rotate(rot||0);
+  const mx=Math.max(rx,ry)||1; ctx.scale(rx/mx,ry/mx);
+  const g=ctx.createRadialGradient(0,0,0,0,0,mx);
+  const[r,gr,b]=col;
+  g.addColorStop(0,   `rgba(${r},${gr},${b},${alpha})`);
+  g.addColorStop(.22, `rgba(${r},${gr},${b},${alpha*.68})`);
+  g.addColorStop(.52, `rgba(${r},${gr},${b},${alpha*.25})`);
+  g.addColorStop(.8,  `rgba(${r},${gr},${b},${alpha*.07})`);
+  g.addColorStop(1,   `rgba(${r},${gr},${b},0)`);
+  ctx.beginPath(); ctx.arc(0,0,mx,0,PI2); ctx.fillStyle=g; ctx.fill(); ctx.restore();
+}
+function glw(px,py,r,col,alpha){
+  if(!isFinite(px)||!isFinite(py)||!isFinite(r)||!isFinite(alpha)) return;
+  if(alpha<.002||r<.3) return;
+  const g=ctx.createRadialGradient(px,py,0,px,py,r);
+  const[cr,cg,cb]=col;
+  g.addColorStop(0,   `rgba(${cr},${cg},${cb},${alpha})`);
+  g.addColorStop(.16, `rgba(${cr},${cg},${cb},${alpha*.74})`);
+  g.addColorStop(.42, `rgba(${cr},${cg},${cb},${alpha*.28})`);
+  g.addColorStop(.72, `rgba(${cr},${cg},${cb},${alpha*.07})`);
+  g.addColorStop(1,   `rgba(${cr},${cg},${cb},0)`);
+  ctx.beginPath(); ctx.arc(px,py,r,0,PI2); ctx.fillStyle=g; ctx.fill();
+}
+
+// ═══════════════════════════════════════════════════
+//  BELL — exact copy of original, uses new proj()
+// ═══════════════════════════════════════════════════
+function drawBell(LC){
+  const bR=185;
+  const breathRich=lerp(.04,1.3,HRV);
+  const heartRate=lerp(.18,.55,R);
+  const heartPhase=T*heartRate;
+  const beatShape=Math.pow(Math.abs(Math.sin(heartPhase)),0.35);
+  const breath=beatShape*lerp(18,42,D)-lerp(8,18,D)*.5+Math.sin(T*lerp(.08,.22,R)+breathRich)*lerp(3,8,D)*breathRich*.4;
+
+  const N=500+Math.floor(D*450)+Math.floor(R*80);
+  const pts=[];
+  for(let i=0;i<N;i++){
+    const baseAng=habs(i*7.31)*PI2;
+    const baseEl =habs(i*4.13)*Math.PI;
+    const baseR  =(bR+breath)*Math.sqrt(habs(i*2.9));
+    const x3=baseR*Math.sin(baseEl)*Math.cos(baseAng);
+    const y3=baseR*Math.cos(baseEl)*lerp(.48,.72,D);
+    const z3=baseR*Math.sin(baseEl)*Math.sin(baseAng);
+    const onsetTiltX=ONSET*bR*.55*Math.sin(baseAng)*Math.max(0,Math.cos(baseEl));
+    const onsetTiltY=ONSET*bR*.3*Math.abs(Math.sin(baseAng));
+    const fx_pre=x3+onsetTiltX, fy_pre=y3+onsetTiltY;
+    const tw=T*.14;
+    const wAmp=lerp(.38,.72,D);
+    const wx=fbm(fx_pre*.007+tw,fy_pre*.006+tw*.4,i*.04,3)*bR*wAmp;
+    const wy=fbm(fx_pre*.006+tw*.3,fy_pre*.007+5,i*.04+3,3)*bR*wAmp*.75;
+    const wz=fbm(x3*.005+5+tw*.2,fy_pre*.006,i*.04+6,3)*bR*wAmp*.9;
+    const fx=fx_pre+wx, fy=fy_pre+wy, fz=z3+wz;
+    const dist=Math.sqrt(fx*fx+(fy/lerp(.48,.72,D))**2+fz*fz)/bR;
+    const onsetSide=Math.cos(baseAng+Math.PI*.5);
+    const onsetSuppression=Math.max(0,(onsetSide*.5+.5)*ONSET*1.8);
+    if(dist>lerp(.85,1.55,D)*(1-onsetSuppression*.35)) continue;
+    const p=proj(fx,fy,fz); if(!p) continue;
+    const cn=sn(fx*.011+T*.004,fy*.011,i*.07)*.5+.5;
+    const ci=Math.max(0,Math.min(9,Math.floor((1-Math.min(dist,1))*7.5+cn*2.2)));
+    const sz=bR*lerp(.065,.22,D)*(1-dist*.5)*(0.65+habs(i*1.2)*.5);
+    const pulseDepth=lerp(.08,.96,HRV);
+    const pulse=(1-pulseDepth)+pulseDepth*Math.abs(Math.sin(T*lerp(1.2,3.2,D)+i*.23+dist*2.2));
+    const dn=fbm(fx*.007,fy*.007+T*.003,i*.055,3)*.5+.5;
+    const onsetDim=(Math.cos(baseAng+Math.PI*.5)*.5+.5)*ONSET*1.4;
+    const alpha=lerp(.06,.44,D)*(1-dist*.55)*(0.5+dn*.85)*(1-S*.08)*pulse*(1-onsetDim*.55);
+    if(alpha<.003) continue;
+    pts.push({px:p.px,py:p.py,z:p.z,sc:p.sc,ci,sz,alpha,rot:baseAng});
+  }
+  pts.sort((a,b)=>a.z-b.z);
+  pts.forEach(pt=>{
+    const s=pt.sz*pt.sc;
+    splat(pt.px,pt.py,s*lerp(1.3,2.2,habs(pt.rot)),s,LC[pt.ci],pt.alpha,pt.rot);
+  });
+
+  // membrane rings
+  for(let pass=0;pass<7;pass++){
+    const pf=1-pass*.11;
+    const pW=(bR+breath*.6)*pf, pH=(bR+breath*.4)*pf*lerp(.48,.72,D);
+    const pA=lerp(.028,.1,D)*(1-pass*.12)*(1-S*.14);
+    const col=LC[Math.min(pass+1,9)];
+    const Np=200;
+    ctx.beginPath();
+    for(let i=0;i<=Np;i++){
+      const ang=(i/Np)*PI2;
+      const d1=fbm(Math.cos(ang)*1.2+T*.08,Math.sin(ang)*1.2+T*.07,T*.9+pass*.9,3)*lerp(.06,.32,1-D);
+      const d2=sn(ang*(9+pass*1.4)+T*.9+Math.sin(T*.55)*2.0,D+pass)*.018*lerp(1,4,1-D);
+      const lobe=sn(ang*2.1+T*.08+pass*.3,D)*(bR*.055)*(1+R*.2);
+      const rx=(pW*(1+d1+d2)+lobe)*Math.cos(ang);
+      const ry= pW*(1+d1*.5+d2*.4)*Math.sin(ang)*lerp(.48,.72,D);
+      const rz=(pW*(1+d1*.3)+lobe*.4)*Math.sin(ang)*.2;
+      const p=proj(rx,ry,rz); if(!p){ctx.closePath();ctx.beginPath();continue;}
+      i===0?ctx.moveTo(p.px,p.py):ctx.lineTo(p.px,p.py);
+    }
+    ctx.closePath();
+    const[r,g,b]=col;
+    const pc=proj(0,0,0)||{px:CX,py:CY};
+    const fg=ctx.createRadialGradient(pc.px-pW*.07,pc.py-pH*.2,0,pc.px,pc.py,Math.max(pW,pH)*1.1);
+    fg.addColorStop(0,  `rgba(${r},${g},${b},${pA*2.8})`);
+    fg.addColorStop(.3, `rgba(${r},${g},${b},${pA*1.4})`);
+    fg.addColorStop(.62,`rgba(${r},${g},${b},${pA*.45})`);
+    fg.addColorStop(.85,`rgba(${r},${g},${b},${pA*.12})`);
+    fg.addColorStop(1,  `rgba(${r},${g},${b},0)`);
+    ctx.fillStyle=fg; ctx.fill();
+    ctx.strokeStyle=`rgba(${r},${g},${b},${pA*.22})`; ctx.lineWidth=.28; ctx.stroke();
+  }
+
+  // nebula arms
+  {
+    const armN=3+Math.floor(D*1.5);
+    for(let a=0;a<armN;a++){
+      const armAng=(a/armN)*PI2+T*.006+D*.8+a*0.3;
+      const armLen=bR*lerp(.5,1.3,D);
+      const steps=18;
+      for(let s=1;s<steps;s++){
+        const pct=s/steps;
+        const wobble=sn(armAng*2+T*.05+s*.3,pct*3)*bR*.12;
+        const x3=Math.cos(armAng)*armLen*pct+wobble;
+        const y3=Math.sin(armAng*.7+T*.04)*bR*.1*pct;
+        const z3=Math.sin(armAng)*armLen*pct+wobble*.5;
+        const p=proj(x3,y3,z3); if(!p) continue;
+        const envelope=Math.exp(-((pct-.38)*(pct-.38))/.08)*(1-pct*.4);
+        const armAlpha=lerp(.04,.22,D)*envelope*(1+Math.sin(T*lerp(.3,.8,D)+a*1.7)*.3);
+        const armSz=bR*lerp(.12,.35,D)*(1-pct*.5)*p.sc;
+        const armCi=Math.min(9,Math.floor(pct*5+3));
+        glw(p.px,p.py,armSz*2.5,LC[armCi],armAlpha*.7);
+        glw(p.px,p.py,armSz*.9,LC[Math.min(armCi+1,9)],armAlpha*1.1);
+      }
+    }
+  }
+
+  // organs
+  const orgs=[[-.12,-.09,.08,.38,7],[.18,.06,-.12,.28,6],[-.2,.12,.15,.24,5],[.08,-.18,-.08,.32,8],[0,.02,0,.46,8],[-.14,.2,.1,.2,5],[.24,-.1,.06,.22,6],[-.22,-.08,-.14,.2,4]];
+  orgs.forEach(([ox,oy,oz,sf,ci],i)=>{
+    const drift=sn(T*.14+i,i*1.2)*bR*.08;
+    const p=proj(ox*bR+drift,oy*bR*lerp(.48,.72,D)+drift*.5,oz*bR+drift*.7);
+    if(!p) return;
+    const sz=bR*sf*lerp(.4,1,D)*p.sc;
+    splat(p.px,p.py,sz*1.7,sz*1.3,LC[Math.max(0,ci-2)],lerp(.06,.18,D));
+    splat(p.px,p.py,sz,sz*.8,LC[ci],lerp(.1,.3,D));
+    glw(p.px,p.py,sz*.7,LC[Math.min(ci+1,9)],lerp(.1,.35,D));
+    glw(p.px,p.py,sz*.28,LC[9],lerp(.07,.28,D));
+  });
+
+  // rim glow
+  const rimN=50+Math.floor(D*26);
+  for(let i=0;i<rimN;i++){
+    const ang=(i/rimN)*PI2;
+    const rw=bR*(1+fbm(Math.cos(ang)*.85,Math.sin(ang)*.85,T*.012,2)*lerp(.02,.07,1-D));
+    const p=proj(Math.cos(ang)*rw,Math.sin(ang)*rw*lerp(.48,.72,D),Math.sin(ang)*rw*.14);
+    if(!p) continue;
+    const pulse=.35+.65*Math.sin(T*.9+i*.3+Math.sin(T*.22)*2);
+    const rci=Math.max(0,Math.min(9,Math.floor(4+Math.sin(ang+.8)*2.6)));
+    const wakeRimFlicker=WAKE>.2?(1+Math.sin(T*lerp(3,9,WAKE)+i*1.7)*WAKE*.6):1;
+    glw(p.px,p.py,(bR*.12+D*6)*p.sc,LC[rci],lerp(.04,.13,D)*pulse*(.75+.25*Math.sin(T*.9+i*.22))*wakeRimFlicker);
+  }
+
+  // breathing pulse waves
+  for(let pw=0;pw<2;pw++){
+    const pt=(T*lerp(.18,.65,R)+pw*Math.PI)%(PI2);
+    const pR=bR*(1.1+pt*.2);
+    const pA=Math.max(0,.09-pt*.028)*lerp(.2,1,D)*(1-S*.2);
+    if(pA>.003){
+      const p0=proj(0,0,0); if(!p0) continue;
+      glw(p0.px,p0.py,pR*p0.sc,LC[3],pA*.4);
+      glw(p0.px,p0.py,pR*1.5*p0.sc,LC[1],pA*.18);
+    }
+  }
+
+  // specular crown
+  const pc=proj(-bR*.11,-bR*.3*lerp(.48,.72,D),0);
+  if(pc){ glw(pc.px,pc.py,bR*.28*pc.sc,LC[8],lerp(.04,.14,D)); glw(pc.px,pc.py,bR*.1*pc.sc,LC[9],lerp(.05,.22,D)); }
+
+  // stress fractures
+  if(S>.22){
+    for(let i=0;i<Math.floor(S*14);i++){
+      const fa=habs(i*5.27)*PI2, fe=habs(i*3.1)*Math.PI;
+      const fr=bR*(habs(i*2.1)*.62+.1);
+      const p=proj(fr*Math.sin(fe)*Math.cos(fa),fr*Math.cos(fe)*lerp(.48,.72,D),fr*Math.sin(fe)*Math.sin(fa));
+      if(!p) continue;
+      splat(p.px,p.py,bR*lerp(.08,.18,S)*lerp(1,2.5,habs(i*.8))*p.sc,bR*lerp(.05,.12,S)*p.sc,LC[i%2===0?3:4],S*lerp(.1,.25,habs(i*.7)));
+    }
+  }
+
+  // phosphorescence
+  const pN=Math.floor(D*80+R*25);
+  for(let i=0;i<pN;i++){
+    const a=habs(i*1.27)*PI2+T*(.012+R*.008)*(i%2?1:-1), el=habs(i*2.3)*Math.PI+T*.015*Math.sin(i*.4);
+    const rr=bR*(habs(i*.68)*.36+habs(i*2.08)*.52)*lerp(.2,.9,D);
+    const p=proj(rr*Math.sin(el)*Math.cos(a),rr*Math.cos(el)*lerp(.48,.72,D),rr*Math.sin(el)*Math.sin(a));
+    if(!p) continue;
+    const pulse=.5+.5*Math.sin(T*1.6+i*1.1);
+    const dsz=lerp(3,12,D)*(0.45+pulse*.55)*p.sc;
+    glw(p.px,p.py,dsz*3.2,LC[Math.min(Math.floor(habs(i*.86)*7)+2,9)],D*.32*pulse);
+    if(D>.32&&pulse>.58) glw(p.px,p.py,dsz*.9,LC[9],D*.1*pulse);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  TENTACLES — exact copy of original
+// ═══════════════════════════════════════════════════
+function drawTentacles(LC){
+  const bR=185;
+  const longN=Math.floor(30+R*45);
+  const oralN=Math.floor(14+R*22);
+  const allTentacles=[];
+
+  function makeTentacle(idx,kind){
+    const ps1=habs(idx*7.31)*PI2, ps2=habs(idx*3.17+1.7)*PI2, ps3=habs(idx*5.93+3.2)*PI2;
+    const total=kind==='long'?longN:oralN;
+    const theta=(idx/total)*PI2+habs(idx*3.71)*.35;
+    const rimEl=kind==='long'?lerp(Math.PI*.52,Math.PI*.88,habs(idx*2.31)):lerp(Math.PI*.44,Math.PI*.70,habs(idx*1.93));
+    const rimR=bR*lerp(.88,.97,D)*Math.sin(rimEl);
+    const rimYv=bR*lerp(.48,.72,D)*Math.cos(rimEl);
+    const sx=rimR*Math.cos(theta), sy=rimYv, sz2=rimR*Math.sin(theta);
+    const lean=lerp(.14,.3,D);
+    const stepsHang=lerp(0,.18,STEPS);
+    const onsetLeanX=ONSET*.5*Math.sin(theta);
+    const onsetLeanY=ONSET*.25;
+    const dirX=Math.cos(theta)*lean*(1-stepsHang)+onsetLeanX, dirY=lerp(.85,.7,lean)+stepsHang+onsetLeanY, dirZ=Math.sin(theta)*lean*(1-stepsHang);
+    const p1x=-Math.sin(theta), p1y=0, p1z=Math.cos(theta);
+    const p2x=dirY*p1z, p2y=dirZ*p1x-dirX*p1z, p2z=-dirY*p1x;
+    const tLen=kind==='long'?Math.floor(lerp(160,380,R)*(0.72+habs(idx*1.6)*.48)):Math.floor(lerp(65,170,R)*(0.68+habs(idx*2.1)*.52));
+    const step=kind==='long'?lerp(1.2,2.2,R):lerp(.8,1.5,R);
+    const colBase=Math.floor(habs(idx*2.3)*7);
+    const hrvScale=lerp(.12,2.2,HRV);
+    const swayA=(kind==='long'?lerp(18,55,R):lerp(10,32,R))*hrvScale;
+    const hrvFreqScale=lerp(2.8,.35,HRV);
+    const swayF=(kind==='long'?lerp(.006,.014,R):lerp(.008,.018,R))*hrvFreqScale;
+    const swaySpd=lerp(.06,.24,R)*lerp(2.0,.5,HRV);
+    const segPts=[];
+    // per-tentacle spring state for mouse deflection
+    if(!tentDefl[idx]){ tentDefl[idx]={dx:0,dy:0,vx:0,vy:0,lit:0}; }
+    const td=tentDefl[idx];
+
+    for(let j=0;j<tLen;j++){
+      const pct=j/tLen;
+      const arc=j*step;
+      const bodyDrift=Math.sin(T*lerp(.15,.4,R)+ps1)*swayA*lerp(.12,.65,HRV);
+      const bodyDrift2=Math.sin(T*lerp(.1,.26,R)+ps2+1.3)*swayA*.22;
+      const lat=Math.sin(arc*swayF+T*swaySpd+ps1)*swayA*(0.6+pct*.4)+Math.sin(arc*swayF*2.3+T*swaySpd*.8+ps2)*swayA*.28+bodyDrift*(1-pct*.7);
+      const gravWeight=lerp(.25,.85,STEPS);
+      const gravityCurl=pct*pct*swayA*gravWeight;
+      const lat2=Math.sin(arc*swayF*1.4+T*swaySpd*.6+ps3)*swayA*.22+bodyDrift2*(1-pct*.6)+gravityCurl;
+      let convulseLat=0, convulseLat2=0;
+      if(WAKE>.12){
+        const cv1=Math.sin(T*lerp(2.5,7,WAKE)+ps1*4.3);
+        const cv2=Math.sin(T*lerp(1.8,5,WAKE)+ps2*3.1+2.7);
+        const burst=cv1*cv2;
+        const convulseStrength=Math.max(0,Math.abs(burst)-lerp(.65,.2,WAKE))*3;
+        const convulseEnvelope=pct*pct*(3-2*pct);
+        const jerkSize=lerp(8,28,WAKE);
+        convulseLat=Math.sign(burst)*convulseStrength*jerkSize*convulseEnvelope;
+        convulseLat2=Math.sin(T*lerp(3,8,WAKE)+ps3*2.7)*convulseStrength*jerkSize*.5*convulseEnvelope;
+      }
+      const x3=sx+dirX*arc+p1x*(lat+convulseLat)+p2x*(lat2+convulseLat2);
+      const y3=sy+dirY*arc+p1y*(lat+convulseLat)+p2y*(lat2+convulseLat2);
+      const z3=sz2+dirZ*arc+p1z*(lat+convulseLat)+p2z*(lat2+convulseLat2);
+      const p=proj(x3,y3,z3); if(!p) continue;
+
+      // ── MOUSE INTERACTION ──────────────────────────────
+      const mouseEnv = pct*pct; // tip moves most, base stays
+      const mpx = p.px + td.dx*mouseEnv;
+      const mpy = p.py + td.dy*mouseEnv;
+
+      if(mouseActive && !isDrag){
+        const dx2=p.px-mouseX, dy2=p.py-mouseY;
+        const dist2=Math.sqrt(dx2*dx2+dy2*dy2);
+        const radius=140;
+        if(dist2<radius){
+          const t2=(1-dist2/radius);
+          const strength=t2*t2*4.5;
+          const nx=dx2/(dist2+.001), ny=dy2/(dist2+.001);
+          td.vx += nx*strength;
+          td.vy += ny*strength;
+          td.lit = Math.min(1, td.lit + t2*0.08);
+          // trigger chime on fresh contact
+          if(!td.wasLit && t2>0.4) playChime(idx, theta, t2);
+          td.wasLit = true;
+        } else {
+          td.wasLit = false;
+        }
+      } else {
+        td.wasLit = false;
+      }
+      // spring: restore + damping
+      td.vx += -td.dx*0.09;
+      td.vy += -td.dy*0.09;
+      td.vx *= 0.80;
+      td.vy *= 0.80;
+      td.dx += td.vx;
+      td.dy += td.vy;
+      const maxD=90;
+      const dlen=Math.sqrt(td.dx*td.dx+td.dy*td.dy);
+      if(dlen>maxD){ td.dx=td.dx/dlen*maxD; td.dy=td.dy/dlen*maxD; }
+      td.lit *= 0.90;
+
+      const _p2=proj(x3+dirX*step*2,y3+dirY*step*2,z3+dirZ*step*2);
+      const screenAng=_p2?Math.atan2(_p2.py-p.py,_p2.px-p.px):0;
+      const ci=Math.min(9,Math.floor((colBase+pct*4)%9));
+      const stepsThick=lerp(.85,1.15,STEPS);
+      const sz=((kind==='long'?lerp(.55,1.8,D):lerp(.35,1.1,D))*(1-pct*.68))*p.sc*stepsThick;
+      const aT=lerp(.12,.32,D+R*.3)*(1-pct*.44)*(1-S*.08);
+      const swell=Math.sin(pct*PI2*lerp(2,4.5,D)+T*lerp(.06,.2,R)+ps3);
+      segPts.push({px:mpx,py:mpy,z:p.z,sc:p.sc,ci,sz,aT,swell,step:step*p.sc,pct,ps1,ps2,arc:j*step,ang:screenAng,lit:td.lit});
+    }
+    return segPts;
+  }
+
+  for(let i=0;i<longN;i++) allTentacles.push(makeTentacle(i,'long'));
+  for(let i=0;i<oralN;i++) allTentacles.push(makeTentacle(i+1000,'oral'));
+  allTentacles.forEach(t=>{ t._avgZ=t.length>0?t.reduce((s,p)=>s+p.z,0)/t.length:0; });
+  allTentacles.sort((a,b)=>a._avgZ-b._avgZ);
+
+  allTentacles.forEach(segs=>{
+    segs.forEach(pt=>{
+      const{px,py,sz,aT,ci,swell,step:stepPx,pct,ps1:pt_ps1,ps2:pt_ps2,arc:pt_arc,sc:pt_sc,lit}=pt;
+      const litBoost = lit||0;
+      splat(px,py,stepPx*1.2,sz*1.1,LC[ci],aT*(1+litBoost*.6));
+      splat(px,py,stepPx*.55,sz*.48,LC[Math.min(ci+1,9)],aT*.6*(1+litBoost*.6));
+      if(pct<.25) splat(px,py,stepPx*.2,sz*.15,LC[Math.min(ci+2,9)],aT*.6*(1-pct*4));
+      if(litBoost>.06){
+        glw(px,py,sz*5*litBoost,LC[Math.min(ci+2,9)],litBoost*.18);
+        glw(px,py,sz*1.5,[220,215,255],litBoost*.2);
+      }
+      if(swell>.72&&sz>.9){
+        glw(px,py,sz*3.2,LC[Math.min(ci+1,9)],aT*.38);
+        glw(px,py,sz*1.4,LC[Math.min(ci+2,9)],aT*.25);
+      }
+      const pulseSpd1=lerp(.18,.5,R);
+      const pulseSpd2=lerp(.1,.3,R);
+      const pulsePos1=(T*pulseSpd1+pt_ps1/PI2)%1;
+      const pulsePos2=(T*pulseSpd2+pt_ps2/PI2+.5)%1;
+      const distToP1=Math.abs(pct-pulsePos1);
+      const distToP2=Math.abs(pct-pulsePos2);
+      const pulseA1=Math.max(0,1-distToP1*18)*lerp(.08,.28,D);
+      const pulseA2=Math.max(0,1-distToP2*14)*lerp(.05,.2,D);
+      const pAng=pt.ang||0;
+      const pSc=pt.sc||0.63;
+      if(pulseA1>.004){
+        glw(px,py,sz*3+pSc*2.5,LC[Math.min(ci+2,9)],pulseA1*.4);
+        splat(px,py,pSc*6,pSc*1.4,LC[Math.min(ci+3,9)],pulseA1*.85,pAng);
+        splat(px,py,pSc*3,pSc*.6,[248,244,255],pulseA1*.65,pAng);
+      }
+      if(pulseA2>.004){
+        glw(px,py,sz*2.5+pSc*2,LC[Math.min(ci+1,9)],pulseA2*.32);
+        splat(px,py,pSc*4.5,pSc*1.1,LC[Math.min(ci+2,9)],pulseA2*.65,pAng);
+      }
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  HAZE — exact copy
+// ═══════════════════════════════════════════════════
+function drawHaze(LC){
+  const bR=lerp(52,128,D);
+  for(let zone=0;zone<7;zone++){
+    const za=zone/7*PI2+T*.018*(zone%2?1:-1);
+    const zci=[0,2,4,1,3,2,5][zone]||0;
+    for(let ci=0;ci<18;ci++){
+      const ph=ci/18;
+      const ang3=za+ph*PI2*.85+sn(ph*2.8+zone,T*.08+ci*.18)*1.1+T*.028*(zone%2?1:-1);
+      const el3=(habs(ci*.9+zone)-.5)*Math.PI;
+      const rd=bR*(2.1+habs(ci*2.6+zone)*1.5+sn(T*.1+zone,ci*.3)*.6);
+      const x3=rd*Math.cos(el3)*Math.cos(ang3);
+      const y3=rd*Math.sin(el3)*lerp(.5,.74,D);
+      const z3=rd*Math.cos(el3)*Math.sin(ang3);
+      const p=proj(x3,y3,z3); if(!p) continue;
+      const sz=bR*lerp(.28,.65,habs(ci*1.7+zone))*p.sc;
+      const hazePulse=.45+.55*Math.sin(T*lerp(.6,1.6,D)+zone*1.1+ci*.5);
+      splat(p.px,p.py,sz*lerp(2.0,3.2,habs(ci*.85+zone))*hazePulse,sz*.88,LC[zci],lerp(.03,.1,D)*(1-S*.08)*hazePulse);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  REM VEIL — exact copy
+// ═══════════════════════════════════════════════════
+function drawREMVeil(LC){
+  if(R<.12) return;
+  const bR=185;
+  const intensity=Math.max(0,(R-.12)/.88);
+  const N=Math.floor(28+intensity*48);
+  for(let i=0;i<N;i++){
+    const seed=i*17.31;
+    const orbitR=bR*(1.12+habs(i*.41)*.82);
+    const orbitSpd=lerp(.28,.65,intensity)*(i%2?1:-1)*(0.5+habs(i*.3)*.9);
+    const orbitPhase=habs(i*2.618)*PI2;
+    const orbitAng=orbitPhase+T*orbitSpd;
+    const orbitElev=lerp(-.52,.52,habs(i*1.618+.5));
+    const cx3=orbitR*Math.cos(orbitAng)*Math.cos(orbitElev);
+    const cy3=orbitR*Math.sin(orbitElev)*lerp(.6,.88,intensity)+Math.sin(T*lerp(.4,.9,R)+seed)*bR*.07;
+    const cz3=orbitR*Math.sin(orbitAng)*Math.cos(orbitElev);
+    const lit=Math.max(.4,1-Math.abs(orbitElev)*.5+Math.cos(orbitAng)*.2);
+    const shadowDim=1-Math.max(0,-Math.cos(orbitAng+.8))*lerp(.1,.3,intensity);
+    const breathe=1+Math.sin(T*lerp(.5,1.2,R)+seed*1.3)*.18;
+    const puffN=4+Math.floor(intensity*6);
+    for(let p2=0;p2<puffN;p2++){
+      const ps=seed*10+p2*3.7;
+      const lAng=habs(ps*.91)*PI2+T*lerp(.06,.18,intensity)*(p2%2?1:-1);
+      const lElev=(habs(ps*.37)-.5)*Math.PI*.5;
+      const lR=lerp(6,40,habs(ps*.22))*(0.55+intensity*.8);
+      const drift=Math.sin(T*lerp(.25,.7,R)+ps)*lerp(2,8,intensity);
+      const x3=cx3+Math.cos(lAng)*Math.cos(lElev)*(lR+drift);
+      const y3=cy3+Math.sin(lElev)*lR+Math.sin(T*lerp(.3,1.0,R)+ps*1.7)*lerp(.5,3,intensity);
+      const z3=cz3+Math.sin(lAng)*Math.cos(lElev)*(lR+drift);
+      const p=proj(x3,y3,z3); if(!p) continue;
+      const ci=Math.min(9,3+Math.floor(habs(ps*.58)*5));
+      const base=lerp(8,28,habs(ps*.44))*p.sc*(0.7+intensity*.6)*breathe;
+      const alpha=lerp(.018,.085,intensity)*(0.55+habs(ps)*.45)*lit*shadowDim;
+      const puffPulse=1+Math.sin(T*lerp(.35,1.1,R)+ps*2.7)*.15;
+      splat(p.px,p.py,base*lerp(1.4,2.8,habs(ps*.71))*puffPulse,base*lerp(.8,1.8,habs(ps*.19))*puffPulse,LC[Math.max(0,ci-1)],alpha*.65,lAng*.4);
+      splat(p.px,p.py,base*1.15*puffPulse,base*.85*puffPulse,LC[ci],alpha,lAng*.2);
+      if(habs(ps*.12)>.55) glw(p.px,p.py,base*1.6,LC[Math.min(ci+1,9)],alpha*.22);
+    }
+    if(intensity>.3){
+      const filN=1+Math.floor(intensity*2);
+      for(let f=0;f<filN;f++){
+        const fs=seed*100+f*11.9;
+        const steps=4+Math.floor(intensity*4);
+        let last=null;
+        for(let s=0;s<steps;s++){
+          const pct2=s/(steps-1);
+          const fa=habs(fs*.13)*PI2+pct2*lerp(.5,1.6,R)+Math.sin(T*lerp(.15,.55,R)+fs)*.25+orbitAng*.3;
+          const fr=pct2*lerp(5,32,intensity);
+          const fp=proj(cx3+Math.cos(fa)*fr,cy3+Math.sin(fa*1.7+fs)*fr*.3,cz3+Math.sin(fa)*fr);
+          if(!fp) continue;
+          const fci=Math.min(9,4+Math.floor(habs(fs+s)*4));
+          glw(fp.px,fp.py,lerp(1.2,4.5,intensity)*fp.sc*(1-pct2*.3),LC[fci],lerp(.005,.018,intensity)*(1-pct2*.2)*lit);
+          if(last&&intensity>.45){
+            ctx.beginPath(); ctx.moveTo(last.px,last.py); ctx.lineTo(fp.px,fp.py);
+            ctx.strokeStyle=`rgba(${LC[fci][0]},${LC[fci][1]},${LC[fci][2]},${lerp(.002,.012,intensity)*lit})`;
+            ctx.lineWidth=lerp(.12,.38,D)*fp.sc; ctx.stroke();
+          }
+          last={px:fp.px,py:fp.py};
+        }
+      }
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  MYCELIUM — exact copy
+// ═══════════════════════════════════════════════════
+function drawMycelium(LC){
+  if(S<.08) return;
+  const bR=185;
+  const intensity=Math.max(0,(S-.08)/.92);
+  const cocoonPhase=Math.max(0,(S-.5)/.5);
+  const strandN=Math.floor(intensity*intensity*900+intensity*320+60);
+  for(let i=0;i<strandN;i++){
+    const ps1=habs(i*9.17)*PI2, ps2=habs(i*4.33+2.1)*PI2;
+    const theta=habs(i*2.618)*PI2;
+    const phi=Math.acos(1-2*habs(i*1.618+.5));
+    const r0=bR*lerp(.7,.95,habs(i*1.43));
+    const sx=r0*Math.sin(phi)*Math.cos(theta);
+    const sy=r0*Math.cos(phi)*lerp(.48,.72,D);
+    const sz0=r0*Math.sin(phi)*Math.sin(theta);
+    const len0=Math.sqrt(sx*sx+sy*sy+sz0*sz0)+.001;
+    const ox=sx/len0, oy=sy/len0, oz=sz0/len0;
+    const tiltAng=ps1;
+    const p1x=-Math.sin(theta), p1z=Math.cos(theta);
+    const tiltAmt=lerp(.3,.8,habs(i*.7));
+    const dx=ox*(1-tiltAmt)+p1x*Math.cos(tiltAng)*tiltAmt;
+    const dy=oy*(1-tiltAmt)+Math.sin(tiltAng)*tiltAmt*.3;
+    const dz=oz*(1-tiltAmt)+p1z*Math.cos(tiltAng)*tiltAmt;
+    const strandLen=Math.floor(lerp(20,160,intensity)*lerp(.12,1,habs(i*1.9)*habs(i*1.9)));
+    const step=lerp(1.5,3.5,intensity);
+    const swayA=lerp(1.5,6,intensity)*(1-cocoonPhase*.5);
+    const swayF=lerp(.01,.025,intensity);
+    const swaySpd=lerp(.012,.045,intensity);
+    const curlRate=cocoonPhase*Math.PI*1.5*(i%2?1:-1);
+    const baseAlpha=lerp(.12,.38,intensity)*(0.48+habs(i*.8)*.55);
+    const hueType=Math.floor(habs(i*3.7)*4);
+    let r,g,b2;
+    const fade=habs(i*.53);
+    if(hueType===0){r=Math.round(lerp(195,235,fade));g=Math.round(lerp(192,230,fade));b2=Math.round(lerp(185,225,fade));}
+    else if(hueType===1){r=Math.round(lerp(105,158,fade));g=Math.round(lerp(128,178,fade));b2=Math.round(lerp(88,132,fade));}
+    else if(hueType===2){r=Math.round(lerp(165,210,fade));g=Math.round(lerp(155,198,fade));b2=Math.round(lerp(88,128,fade));}
+    else{r=Math.round(lerp(145,188,fade));g=Math.round(lerp(145,185,fade));b2=Math.round(lerp(148,190,fade));}
+    const typeAlphaMod=hueType===0?0.65:hueType===3?0.8:1.0;
+    const strandAlpha=baseAlpha*typeAlphaMod;
+    ctx.beginPath();
+    let started=false;
+    for(let j=0;j<strandLen;j++){
+      const pct=j/strandLen;
+      const arc=j*step;
+      const lat=Math.sin(arc*swayF+T*swaySpd+ps1)*swayA*(1-pct*.4)+Math.sin(arc*swayF*1.8+T*swaySpd*.65+ps2)*swayA*.22;
+      const curlAng=curlRate*pct;
+      const x3=sx+(dx*Math.cos(curlAng)-dz*Math.sin(curlAng))*arc+p1x*lat;
+      const y3=sy+dy*arc;
+      const z3=sz0+(dz*Math.cos(curlAng)+dx*Math.sin(curlAng))*arc+p1z*lat;
+      const p=proj(x3,y3,z3);
+      if(!p) continue;
+      if(!started){ctx.moveTo(p.px,p.py);started=true;}
+      else ctx.lineTo(p.px,p.py);
+    }
+    if(started){
+      ctx.strokeStyle=`rgba(${r},${g},${b2},${strandAlpha})`;
+      ctx.lineWidth=Math.max(lerp(.7,1.8,intensity)*(1-cocoonPhase*.3),.5);
+      ctx.lineCap='round'; ctx.stroke();
+    }
+  }
+  if(cocoonPhase>.2){
+    for(let pass=0;pass<2;pass++){
+      const shellR2=bR*(1.05+pass*.08);
+      ctx.beginPath();
+      for(let i=0;i<=110;i++){
+        const ang=(i/110)*PI2;
+        const d=1+fbm(Math.cos(ang)+T*.008+pass,Math.sin(ang)+T*.007,T*.05+pass,3)*lerp(.02,.09,cocoonPhase);
+        const p=proj(shellR2*Math.cos(ang)*d,shellR2*Math.sin(ang)*lerp(.48,.72,D)*d,shellR2*Math.sin(ang+.5)*.12*d);
+        if(!p){ctx.closePath();ctx.beginPath();continue;}
+        i===0?ctx.moveTo(p.px,p.py):ctx.lineTo(p.px,p.py);
+      }
+      ctx.closePath();
+      ctx.strokeStyle=`rgba(148,155,118,${cocoonPhase*lerp(.018,.04,cocoonPhase)*(1-pass*.4)})`;
+      ctx.lineWidth=lerp(.15,.45,cocoonPhase); ctx.stroke();
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  FLOATING PARTICLES — exact copy
+// ═══════════════════════════════════════════════════
+function drawFloatingParticles(LC){
+  const bR=185;
+  const pN=Math.floor(50+STEPS*80+D*40);
+  for(let i=0;i<pN;i++){
+    const orbitPhase=habs(i*1.27)*PI2;
+    const orbitR=bR*(lerp(.8,2.8,habs(i*.68)))+sn(T*.08+i,i*.3)*bR*.18;
+    const orbitSpeed=(.008+habs(i*.4)*.012+STEPS*.022)*(i%2?1:-1);
+    const ang=orbitPhase+T*orbitSpeed;
+    const elev=habs(i*2.3)*Math.PI-Math.PI*.5;
+    const x3=orbitR*Math.cos(elev)*Math.cos(ang)+sn(T*.06+i,i*.22)*bR*.12;
+    const y3=orbitR*Math.sin(elev)*lerp(.5,.8,D)+sn(T*.05+i,i*.3+1)*bR*.1+STEPS*bR*.15*habs(i*.3);
+    const z3=orbitR*Math.cos(elev)*Math.sin(ang);
+    const p=proj(x3,y3,z3); if(!p) continue;
+    const pulse=.3+.7*Math.abs(Math.sin(T*lerp(.8,2.2,D)*habs(i*.5+.5)+i*1.3));
+    if(pulse<.15) continue;
+    const dsz=lerp(1.2,4.5,D)*(0.4+pulse*.6)*p.sc;
+    const ci=Math.min(9,Math.floor(habs(i*.88)*7)+1);
+    const depthAlpha=Math.max(.2,Math.min(1,(p.z+400)/500));
+    const wakeFlicker=WAKE>.3?(.6+.4*Math.abs(Math.sin(T*4+i*2.1))):1;
+    glw(p.px,p.py,dsz*2.2,LC[ci],(D*.14+STEPS*.08)*pulse*depthAlpha*wakeFlicker);
+    if(pulse>.6) glw(p.px,p.py,dsz*.7,LC[Math.min(ci+2,9)],D*.12*pulse*depthAlpha);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  EDGE VIGNETTE
+// ═══════════════════════════════════════════════════
+function drawEdge(){
+  const g=ctx.createRadialGradient(CX,CY,W*.15,CX,CY,W*.85);
+  g.addColorStop(0,'rgba(1,1,8,0)');
+  g.addColorStop(.55,'rgba(1,1,8,0)');
+  g.addColorStop(.82,'rgba(1,1,8,.28)');
+  g.addColorStop(1,'rgba(1,1,8,.72)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+}
+
+// ═══════════════════════════════════════════════════
+//  MAIN DRAW LOOP
+// ═══════════════════════════════════════════════════
+function draw(){
+  T += .014+R*.007;
+  if(!isDrag){ rotY += .003; floatY = Math.sin(T*.18)*10+Math.sin(T*.11+1.3)*5; }
+
+  // memory blend
+  const rawD=D,rawR=R,rawS=S,rawHRV=HRV,rawTEMP=TEMP,rawONSET=ONSET,rawWAKE=WAKE,rawSTEPS=STEPS;
+  const mw=.32;
+  D=rawD*(1-mw)+MEM.d*mw; R=rawR*(1-mw)+MEM.r*mw; S=rawS*(1-mw)+MEM.s*mw;
+  HRV=rawHRV*(1-mw)+MEM.hrv*mw; TEMP=rawTEMP*(1-mw)+MEM.temp*mw;
+  ONSET=rawONSET*(1-mw)+MEM.onset*mw; WAKE=rawWAKE*(1-mw)+MEM.wake*mw; STEPS=rawSTEPS*(1-mw)+MEM.steps*mw;
+
+  ctx.clearRect(0,0,W,H);
+
+  // deep space bg
+  const bg=ctx.createRadialGradient(CX,CY*.9,0,CX,H*.55,W);
+  bg.addColorStop(0,'#04061a'); bg.addColorStop(.45,'#02030e'); bg.addColorStop(1,'#010108');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  // distant nebula
+  glw(CX,CY,W*.65,[38,18,90],.06+D*.04);
+  glw(CX+40,CY-30,W*.5,[26,90,160],.04+D*.025);
+  glw(CX-30,CY+20,W*.55,[120,60,180],.035+R*.04);
+  glw(CX,CY+40,W*.48,[60,20,100],.03+D*.02);
+
+  const tempBias=TEMP-.5;
+  const stressLC=makePal(S);
+  const LC=stressLC.map(([r,g,b])=>[
+    Math.round(Math.min(255,Math.max(0,r+tempBias*120))),
+    Math.round(Math.min(255,Math.max(0,g+tempBias*(-40)))),
+    Math.round(Math.min(255,Math.max(0,b+tempBias*(-180))))
+  ]);
+
+  drawHaze(LC);
+  drawTentacles(LC);
+  drawBell(LC);
+  drawREMVeil(LC);
+  drawFloatingParticles(LC);
+  drawMycelium(LC);
+  drawEdge();
+
+  D=rawD;R=rawR;S=rawS;HRV=rawHRV;TEMP=rawTEMP;ONSET=rawONSET;WAKE=rawWAKE;STEPS=rawSTEPS;
+  requestAnimationFrame(draw);
+}
+
+// ═══════════════════════════════════════════════════
+//  CONTROLS
+// ═══════════════════════════════════════════════════
+function updateState(){
+  const st=gst();
+  document.getElementById('sn').textContent=st.n;
+  document.getElementById('sp').innerHTML=st.p.replace(/\n/g,'<br>');
+}
+function bind(id,vid,fn){
+  const el=document.getElementById(id), ve=document.getElementById(vid);
+  el.addEventListener('input',()=>{ fn(parseFloat(el.value)); ve.textContent=parseFloat(el.value).toFixed(2); updateState(); });
+}
+bind('d','dv',v=>D=v); bind('r','rv',v=>R=v); bind('s','sv',v=>S=v);
+bind('h','hv',v=>HRV=v); bind('t','tv',v=>TEMP=v); bind('o','ov',v=>ONSET=v);
+bind('w','wv',v=>WAKE=v); bind('a','av',v=>STEPS=v);
+document.getElementById('btn-rec').addEventListener('click',recordNight);
+document.getElementById('btn-bad').addEventListener('click',simulateBadNight);
+document.getElementById('btn-clr').addEventListener('click',clearMem);
+updateMemUI(); updateState();
+(function(){
+  const proto=document.getElementById('proto');
+  const tab=document.getElementById('panel-tab');
+  const closeBtn=document.getElementById('panel-close');
+  const closeTab=document.getElementById('panel-close-tab');
+  tab.addEventListener('click',e=>{ e.stopPropagation(); proto.classList.add('open'); tab.style.opacity='0'; tab.style.pointerEvents='none'; closeTab.classList.add('visible'); });
+  const _closePanel = e=>{ if(e) e.stopPropagation(); proto.classList.remove('open'); tab.style.opacity=''; tab.style.pointerEvents=''; closeTab.classList.remove('visible'); };
+  closeBtn.addEventListener('click', _closePanel);
+  closeTab.addEventListener('click', _closePanel);
+  proto.addEventListener('mousedown', e => e.stopPropagation());
+  proto.addEventListener('touchstart', e => e.stopPropagation(), {passive: false});
+  proto.addEventListener('wheel', e => e.stopPropagation());
+})();
+
+draw();
+
+// ═══════════════════════════════════════════════════
+//  ONBOARDING FLOW
+// ═══════════════════════════════════════════════════
+
+// Hide main app elements until organism is revealed
+const _appEls = [
+  document.querySelector('.wrap'),
+  document.querySelector('.hint'),
+  document.querySelector('.exhibit'),
+  document.getElementById('panel-tab')
+];
+_appEls.forEach(el => {
+  if(el){ el.style.opacity='0'; el.style.transition='opacity .4s ease'; el.style.pointerEvents='none'; }
+});
+// Also hide canvas itself until organism is revealed
+canvas.style.opacity = '0';
+
+const _screenLanding  = document.getElementById('screen-landing');
+const _screenApi     = document.getElementById('screen-api');
+const _screenRitual  = document.getElementById('screen-ritual');
+const _screenLoading = document.getElementById('screen-loading');
+
+function _setGreeting(){
+  const h = new Date().getHours();
+  document.getElementById('greeting').textContent = (h >= 5 && h < 17) ? 'Good morning.' : 'Good evening.';
+}
+
+function _fadeIn(el, cb){
+  el.style.display = 'flex';
+  el.style.opacity = '0';
+  requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
+    el.style.opacity = '1';
+    if(cb) setTimeout(cb, 400);
+  }); });
+}
+
+function _fadeOut(el, cb){
+  el.style.opacity = '0';
+  setTimeout(()=>{ el.style.display='none'; if(cb) cb(); }, 400);
+}
+
+function _revealApp(){
+  _fadeOut(_screenLoading, function(){
+    canvas.style.opacity = '1';
+    _appEls.forEach(function(el){ if(el){ el.style.opacity='1'; el.style.pointerEvents=''; } });
+  });
+}
+
+// ── Landing: Try a Sample Night
+let _isDemoMode = false;
+const SAMPLE_DESC = 'I fell asleep late, woke up twice, and had vivid dreams about water.';
+
+document.getElementById('btn-sample').addEventListener('click', ()=>{
+  _isDemoMode = true;
+  _fadeOut(_screenLanding, ()=>{
+    _fadeIn(_screenLoading);
+    _runGrow(SAMPLE_DESC);
+  });
+});
+
+// ── Landing: Use My Own Night with API Key
+document.getElementById('btn-own-key').addEventListener('click', ()=>{
+  _isDemoMode = false;
+  if(localStorage.getItem('api_key')){
+    _setGreeting();
+    _fadeOut(_screenLanding, ()=>_fadeIn(_screenRitual));
+  } else {
+    _fadeOut(_screenLanding, ()=>_fadeIn(_screenApi));
+  }
+});
+
+// API key submit
+document.getElementById('api-key-btn').addEventListener('click', ()=>{
+  const k = document.getElementById('api-key-input').value.trim();
+  if(!k) return;
+  localStorage.setItem('api_key', k);
+  _setGreeting();
+  _fadeOut(_screenApi, ()=>_fadeIn(_screenRitual));
+});
+document.getElementById('api-key-input').addEventListener('keydown', e=>{
+  if(e.key === 'Enter') document.getElementById('api-key-btn').click();
+});
+
+// API key screen: back to landing
+document.getElementById('btn-back-to-landing').addEventListener('click', ()=>{
+  _fadeOut(_screenApi, ()=>_fadeIn(_screenLanding));
+});
+document.getElementById('sleep-input').addEventListener('keydown', e=>{
+  if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); document.getElementById('btn-grow').click(); }
+});
+
+// Apple Health modal
+document.getElementById('btn-apple-health').addEventListener('click', ()=>{
+  const m = document.getElementById('modal-health');
+  m.style.display = 'flex';
+  requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ m.style.opacity='1'; }); });
+});
+document.getElementById('btn-close-health').addEventListener('click', ()=>{
+  const m = document.getElementById('modal-health');
+  m.style.opacity = '0';
+  setTimeout(()=>{ m.style.display='none'; }, 400);
+});
+
+// Grow organism — button handler
+document.getElementById('btn-grow').addEventListener('click', ()=>{
+  const desc = document.getElementById('sleep-input').value.trim() || 'no description provided';
+  _fadeOut(_screenRitual, ()=>{
+    _fadeIn(_screenLoading);
+    _runGrow(desc);
+  });
+});
+
+// ── Shared organism-grow pipeline
+async function _runGrow(desc){
+
+  // Demo mode fallback response
+  function _demoFallback(desc){
+    const lower = desc.toLowerCase();
+    const d = lower.includes('deep') ? 0.78 : lower.includes('light') ? 0.32 : 0.55;
+    const r = lower.includes('dream') || lower.includes('vivid') ? 0.82 : 0.45;
+    const s = lower.includes('stress') || lower.includes('anxious') ? 0.65 : lower.includes('woke') || lower.includes('waking') ? 0.42 : 0.28;
+    const hrv = s > 0.5 ? 0.38 : 0.72;
+    const onset = lower.includes('late') || lower.includes('couldn\'t sleep') ? 0.72 : 0.38;
+    const wake = lower.includes('twice') || lower.includes('woke') ? 0.58 : lower.includes('three') ? 0.78 : 0.22;
+    const signals = [];
+    if(onset > 0.5) signals.push({input:'late onset', effect:'elongated latency filaments'});
+    if(wake > 0.45) signals.push({input:'frequent waking', effect:'fractured membrane nodes'});
+    if(r > 0.7) signals.push({input:'vivid dreaming', effect:'expanded REM veil'});
+    if(s > 0.4) signals.push({input:'stress residue', effect:'amber pressure scars'});
+    if(d > 0.65) signals.push({input:'deep sleep', effect:'denser bell glow'});
+    return {
+      deep_sleep: d, rem: r, stress: s, hrv, temperature: 0.48,
+      sleep_latency: onset, wake_count: wake, day_residue: 0.55,
+      organism_name: r > 0.7 ? 'Vivid Membrane Drifter' : wake > 0.5 ? 'Fractured Sleeper' : 'Soft Pelagic',
+      organism_state: r > 0.7 ? 'filaments extending\nevery direction at once\nsleeping sideways' : 'surface broken\nstill reaching through\nthirty-seven interruptions',
+      emotional_read: onset > 0.5 ? 'You arrived late to your own sleep, and it kept slipping away.' : 'The night held you loosely, letting something vivid move through.',
+      biological_translation: r > 0.7 ? 'The organism cycled through charged REM while delta held beneath. Surface tension metabolized residual wakefulness slowly.' : 'Membrane integrity fluctuated across three disruption events. Core luminescence stabilized in lower chambers.',
+      interpretation: 'A night spent between arrival and dissolution.',
+      detected_signals: signals
+    };
+  }
+
+  try {
+    let p;
+    if(_isDemoMode){
+      // Simulate loading feel
+      await new Promise(res => setTimeout(res, 1400));
+      p = _demoFallback(desc);
+    } else {
+      const apiKey = localStorage.getItem('api_key');
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-5',
+          max_tokens: 1200,
+          system: `You are the biological interpreter for Dream Biology — an app that transforms sleep into living organisms. Parse the user's sleep description into parameters and generate a three-layer poetic diagnosis. Respond ONLY in valid JSON, no markdown, no backticks, no explanation.
+
+Format:
+{
+  "deep_sleep": 0.0-1.0,
+  "rem": 0.0-1.0,
+  "stress": 0.0-1.0,
+  "hrv": 0.0-1.0,
+  "temperature": 0.0-1.0,
+  "sleep_latency": 0.0-1.0,
+  "wake_count": 0.0-1.0,
+  "day_residue": 0.0-1.0,
+  "organism_name": "poetic biological name, e.g. Fractured Noctiluca",
+  "organism_state": "3 short poetic lines about the organism's condition, newline-separated",
+  "emotional_read": "EXACTLY one sentence, maximum 20 words. Second person, visceral, no hedging. e.g. 'You spent the night clawing at sleep that kept dissolving.'",
+  "biological_translation": "EXACTLY two sentences, maximum 15 words each. Third person biological tone. e.g. 'The organism cycled through charged REM while delta held beneath. Surface heat metabolized residual cortisol slowly.'",
+  "interpretation": "One compressed poetic sentence, third person.",
+  "detected_signals": [
+    {"input": "phrase from user description", "effect": "biological morphology consequence"},
+    {"input": "phrase from user description", "effect": "biological morphology consequence"}
+  ]
+}
+
+For detected_signals: extract 2-4 key phrases or conditions the user mentioned, and map each to a specific visual/biological effect on the organism. Examples: {"input":"late onset","effect":"elongated latency filaments"}, {"input":"frequent waking","effect":"fractured membrane nodes"}, {"input":"vivid dreaming","effect":"expanded REM veil"}, {"input":"stress residue","effect":"amber pressure scars"}.`,
+          messages: [{ role: 'user', content: desc }]
+        })
+      });
+
+      console.log('API response status:', res.status, res.ok);
+      if(!res.ok) throw new Error('API error ' + res.status);
+      const data = await res.json();
+      console.log('API response data:', data);
+      const text = data.content[0].text;
+      const clean = text.replace(/```json\n?|\n?```/g, '').trim();
+      p = JSON.parse(clean);
+      console.log('parsed:', p);
+    }
+
+    // Map API response to organism params
+    D     = typeof p.deep_sleep    === 'number' ? Math.max(0,Math.min(1,p.deep_sleep))    : 0.68;
+    R     = typeof p.rem           === 'number' ? Math.max(0,Math.min(1,p.rem))           : 0.55;
+    S     = typeof p.stress        === 'number' ? Math.max(0,Math.min(1,p.stress))        : 0.3;
+    HRV   = typeof p.hrv           === 'number' ? Math.max(0,Math.min(1,p.hrv))           : 0.7;
+    TEMP  = typeof p.temperature   === 'number' ? Math.max(0,Math.min(1,p.temperature))   : 0.5;
+    ONSET = typeof p.sleep_latency === 'number' ? Math.max(0,Math.min(1,p.sleep_latency)) : 0.4;
+    WAKE  = typeof p.wake_count    === 'number' ? Math.max(0,Math.min(1,p.wake_count))    : 0.2;
+    STEPS = typeof p.day_residue   === 'number' ? Math.max(0,Math.min(1,p.day_residue))   : 0.55;
+
+    // Sync sliders
+    [['d','dv',D],['r','rv',R],['s','sv',S],['h','hv',HRV],
+     ['t','tv',TEMP],['o','ov',ONSET],['w','wv',WAKE],['a','av',STEPS]
+    ].forEach(([sid,vid,val])=>{
+      const se=document.getElementById(sid); if(se) se.value=val;
+      const ve=document.getElementById(vid); if(ve) ve.textContent=val.toFixed(2);
+    });
+
+    // Set organism display from API
+    document.getElementById('sn').textContent = p.organism_name || 'Unknown Form';
+    document.getElementById('sp').innerHTML   = (p.organism_state || 'signal lost\nform incomplete\nsomething still stirs').replace(/\n/g,'<br>');
+
+    // Three-layer diagnosis
+    _renderDiagnosis(p, {d:D, r:R, s:S, hrv:HRV, onset:ONSET, wake:WAKE});
+
+    // Detected signals
+    _renderDetectedSignals(p.detected_signals || []);
+
+  } catch(err) {
+    console.error(err);
+    // Fallback defaults
+    D=0.68; R=0.55; S=0.3; HRV=0.7; TEMP=0.5; ONSET=0.4; WAKE=0.2; STEPS=0.55;
+
+    [['d','dv',D],['r','rv',R],['s','sv',S],['h','hv',HRV],
+     ['t','tv',TEMP],['o','ov',ONSET],['w','wv',WAKE],['a','av',STEPS]
+    ].forEach(([sid,vid,val])=>{
+      const se=document.getElementById(sid); if(se) se.value=val;
+      const ve=document.getElementById(vid); if(ve) ve.textContent=val.toFixed(2);
+    });
+
+    document.getElementById('sn').textContent = 'Unknown Form';
+    document.getElementById('sp').innerHTML   = 'signal lost<br>form incomplete<br>something still stirs';
+    document.getElementById('diagnosis').style.display = 'none';
+    const iEl = document.getElementById('interpretation');
+    if(iEl) iEl.textContent = '';
+
+    const banner = document.getElementById('error-banner');
+    if(banner){ banner.style.display='block'; setTimeout(()=>{ banner.style.display='none'; }, 7000); }
+  }
+
+  _revealApp();
+  // After organism is grown, show action bar + re-dream btn
+  document.getElementById('action-bar').classList.add('visible');
+  document.getElementById('redream-btn').classList.add('visible');
+
+  // Save this night to history
+  _saveNightToHistory({
+    d: D, r: R, s: S, hrv: HRV, temp: TEMP,
+    onset: ONSET, wake: WAKE, steps: STEPS,
+    name: document.getElementById('sn').textContent,
+    state: document.getElementById('sp').innerHTML,
+    interp: document.getElementById('interpretation').textContent,
+    emotional_read: document.getElementById('diag-l1').textContent,
+    biological_translation: document.getElementById('diag-l2').textContent,
+    detected_signals: (()=>{ const ds=document.getElementById('ds-list'); return ds ? Array.from(ds.querySelectorAll('.ds-row')).map(r=>({ input: r.querySelector('.ds-input')?.textContent||'', effect: r.querySelector('.ds-effect')?.textContent||'' })) : []; })(),
+    ts: Date.now()
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  THREE-LAYER DIAGNOSIS RENDER
+// ═══════════════════════════════════════════════════
+function _renderDiagnosis(p, params){
+  const diag = document.getElementById('diagnosis');
+  const l1   = document.getElementById('diag-l1');
+  const l2   = document.getElementById('diag-l2');
+  const tog  = document.getElementById('diag-l3-toggle');
+
+  // Reset animation state
+  l1.classList.remove('revealed');
+  l2.classList.remove('revealed');
+  tog.classList.remove('revealed');
+  document.getElementById('diag-l3-metrics').classList.remove('open');
+  tog.classList.remove('open');
+
+  // Sentence truncation helpers — frontend safety net
+  function _oneSentence(text){
+    if(!text) return '';
+    // Match up to first sentence-ending punctuation
+    const m = text.match(/^.+?[.!?](?:\s|$)/);
+    if(m) return m[0].trim();
+    // Fallback: hard truncate at 120 chars at word boundary
+    if(text.length <= 120) return text.trim();
+    return text.slice(0, 120).replace(/\s+\S*$/, '…');
+  }
+  function _twoSentences(text){
+    if(!text) return '';
+    // Find first two sentence endings
+    const re = /[^.!?]*[.!?]+/g;
+    const results = [];
+    let m;
+    while((m = re.exec(text)) !== null && results.length < 2){
+      results.push(m[0].trim());
+    }
+    if(results.length >= 2) return results.join(' ');
+    if(results.length === 1) return results[0];
+    // Fallback: hard truncate at 180 chars
+    if(text.length <= 180) return text.trim();
+    return text.slice(0, 180).replace(/\s+\S*$/, '…');
+  }
+
+  // Fill content with truncation
+  l1.textContent = _oneSentence(p.emotional_read || '');
+  l2.textContent = _twoSentences(p.biological_translation || '');
+
+  // Fill metric bars
+  const metrics = [
+    ['d', params.d,    'deep sleep'],
+    ['r', params.r,    'REM'],
+    ['h', params.hrv,  'HRV'],
+    ['s', params.s,    'stress'],
+    ['w', params.wake, 'wake count'],
+    ['o', params.onset,'sleep latency'],
+  ];
+  metrics.forEach(([key, val]) => {
+    const bar = document.getElementById('mb-'+key);
+    const txt = document.getElementById('mv-'+key);
+    if(bar) bar.style.width = (val*100).toFixed(0)+'%';
+    if(txt) txt.textContent = val.toFixed(2);
+  });
+
+  diag.style.display = 'block';
+
+  // Stagger reveal animations
+  requestAnimationFrame(()=>{
+    setTimeout(()=>l1.classList.add('revealed'), 80);
+    setTimeout(()=>l2.classList.add('revealed'), 260);
+    setTimeout(()=>tog.classList.add('revealed'), 420);
+  });
+}
+
+// Metrics toggle
+document.getElementById('diag-l3-toggle').addEventListener('click', ()=>{
+  const tog     = document.getElementById('diag-l3-toggle');
+  const metrics = document.getElementById('diag-l3-metrics');
+  tog.classList.toggle('open');
+  metrics.classList.toggle('open');
+});
+
+// ═══════════════════════════════════════════════════
+//  ECHO MODE STATE — declared early (used in re-dream handler)
+// ═══════════════════════════════════════════════════
+let _echoActive = false;
+let _echoD=D, _echoR=R, _echoS=S, _echoHRV=HRV, _echoTEMP=TEMP, _echoONSET=ONSET, _echoWAKE=WAKE, _echoSTEPS=STEPS;
+
+// ═══════════════════════════════════════════════════
+//  RE-DREAM — go back to ritual screen
+// ═══════════════════════════════════════════════════
+document.getElementById('redream-btn').addEventListener('click', ()=>{
+  // Fade out app elements
+  _appEls.forEach(el=>{ if(el){ el.style.opacity='0'; el.style.pointerEvents='none'; } });
+  document.getElementById('action-bar').classList.remove('visible');
+  document.getElementById('redream-btn').classList.remove('visible');
+  document.getElementById('echo-badge').classList.remove('visible');
+  _echoActive = false;
+  _isDemoMode = false;
+  document.getElementById('diagnosis').style.display = 'none';
+  document.getElementById('detected-signals').style.display = 'none';
+  // Reset input
+  document.getElementById('sleep-input').value = '';
+  _fadeIn(_screenLanding);
+});
+
+// ═══════════════════════════════════════════════════
+//  SLEEP HISTORY — localStorage archive
+// ═══════════════════════════════════════════════════
+const HIST_KEY = 'dream-bio-history-v1';
+const MAX_HIST = 14;
+
+function _loadHistory(){
+  try{
+    const raw = localStorage.getItem(HIST_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+
+function _saveNightToHistory(entry){
+  const hist = _loadHistory();
+  hist.unshift(entry);
+  if(hist.length > MAX_HIST) hist.length = MAX_HIST;
+  try{ localStorage.setItem(HIST_KEY, JSON.stringify(hist)); }catch(e){}
+}
+
+function _renderHistOrb(entry, size=48){
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const cx = c.getContext('2d');
+  const { d=0.5, r=0.5, s=0.3, temp=0.5 } = entry;
+
+  // mini bioluminescent orb using same color logic
+  const t = (s - 0.25) / 0.4;
+  const cold = [[42,32,140],[38,85,175],[148,88,205]];
+  const warm = [[108,32,28],[195,105,35],[240,190,85]];
+  const pal = s < 0.25 ? cold : s > 0.65 ? warm :
+    cold.map((c2,i)=>c2.map((v,j)=>Math.round(v+(warm[i][j]-v)*Math.max(0,Math.min(1,t)))));
+
+  const cxc = size/2, cyc = size/2;
+  // Outer glow
+  const gb = cx.createRadialGradient(cxc,cyc,0,cxc,cyc,size*.5);
+  gb.addColorStop(0, `rgba(${pal[2][0]},${pal[2][1]},${pal[2][2]},${0.12+d*0.2})`);
+  gb.addColorStop(0.5, `rgba(${pal[1][0]},${pal[1][1]},${pal[1][2]},${0.08+d*0.1})`);
+  gb.addColorStop(1, `rgba(0,0,0,0)`);
+  cx.beginPath(); cx.arc(cxc,cyc,size*.5,0,Math.PI*2);
+  cx.fillStyle=gb; cx.fill();
+
+  // Core bell shape
+  const gcore = cx.createRadialGradient(cxc-2,cyc-3,0,cxc,cyc,size*.28*(0.5+d*.8));
+  gcore.addColorStop(0, `rgba(${pal[2][0]},${pal[2][1]},${pal[2][2]},${0.6+d*0.3})`);
+  gcore.addColorStop(0.4, `rgba(${pal[1][0]},${pal[1][1]},${pal[1][2]},${0.3+d*0.2})`);
+  gcore.addColorStop(1, `rgba(0,0,0,0)`);
+  cx.beginPath(); cx.arc(cxc,cyc,size*.28*(0.5+d*.8),0,Math.PI*2);
+  cx.fillStyle=gcore; cx.fill();
+
+  // Tentacle hints (REM lines)
+  cx.save();
+  const tN = Math.floor(4 + r*6);
+  for(let i=0;i<tN;i++){
+    const ang = (i/tN)*Math.PI*2;
+    const len = size*.18 + r*size*.12;
+    cx.beginPath();
+    cx.moveTo(cxc + Math.cos(ang)*size*.22, cyc + Math.sin(ang)*size*.22*0.65);
+    cx.lineTo(cxc + Math.cos(ang+0.2)*(size*.22+len), cyc + Math.sin(ang)*((size*.22+len)*0.65));
+    cx.strokeStyle = `rgba(${pal[2][0]},${pal[2][1]},${pal[2][2]},${0.2+r*0.25})`;
+    cx.lineWidth = 0.6; cx.stroke();
+  }
+  cx.restore();
+
+  return c;
+}
+
+function _buildHistoryUI(){
+  const track = document.getElementById('hist-track');
+  track.innerHTML = '';
+  const hist = _loadHistory();
+  if(hist.length === 0){
+    const empty = document.createElement('div');
+    empty.className = 'hist-empty';
+    empty.textContent = 'no nights recorded yet';
+    track.appendChild(empty);
+    return;
+  }
+  hist.forEach((entry, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'hist-entry';
+    wrap.title = entry.name || 'Unknown Form';
+
+    const orb = document.createElement('div');
+    orb.className = 'hist-orb';
+    const miniCanvas = _renderHistOrb(entry, 48);
+    orb.appendChild(miniCanvas);
+
+    const dateEl = document.createElement('div');
+    dateEl.className = 'hist-date';
+    const d2 = new Date(entry.ts||Date.now());
+    dateEl.textContent = i===0 ? 'tonight' : `${d2.getMonth()+1}/${d2.getDate()}`;
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'hist-name';
+    nameEl.textContent = entry.name || '—';
+
+    // Click to restore organism
+    wrap.addEventListener('click', ()=>{
+      D = entry.d||0.5; R = entry.r||0.5; S = entry.s||0.3; HRV = entry.hrv||0.7;
+      TEMP = entry.temp||0.5; ONSET = entry.onset||0.4; WAKE = entry.wake||0.2; STEPS = entry.steps||0.55;
+      [['d','dv',D],['r','rv',R],['s','sv',S],['h','hv',HRV],
+       ['t','tv',TEMP],['o','ov',ONSET],['w','wv',WAKE],['a','av',STEPS]
+      ].forEach(([sid,vid,val])=>{
+        const se=document.getElementById(sid); if(se) se.value=val;
+        const ve=document.getElementById(vid); if(ve) ve.textContent=val.toFixed(2);
+      });
+      document.getElementById('sn').textContent = entry.name || 'Unknown Form';
+      document.getElementById('sp').innerHTML   = entry.state || '';
+      const iEl = document.getElementById('interpretation');
+      if(iEl) iEl.textContent = entry.interp || '';
+
+      // Restore diagnosis layers if saved
+      if(entry.emotional_read || entry.biological_translation){
+        const fakeP = {
+          emotional_read: entry.emotional_read || '',
+          biological_translation: entry.biological_translation || '',
+        };
+        _renderDiagnosis(fakeP, {d:D, r:R, s:S, hrv:HRV, onset:ONSET, wake:WAKE});
+      } else {
+        document.getElementById('diagnosis').style.display = 'none';
+      }
+
+      // Restore detected signals if saved
+      _renderDetectedSignals(entry.detected_signals || []);
+
+      document.getElementById('history-panel').classList.remove('open');
+    });
+
+    wrap.appendChild(orb); wrap.appendChild(dateEl); wrap.appendChild(nameEl);
+    track.appendChild(wrap);
+  });
+}
+
+document.getElementById('btn-history').addEventListener('click', ()=>{
+  _buildHistoryUI();
+  document.getElementById('history-panel').classList.add('open');
+});
+document.getElementById('hist-close-btn').addEventListener('click', ()=>{
+  document.getElementById('history-panel').classList.remove('open');
+});
+// Prevent history panel from bleeding events to canvas
+const _histPanel = document.getElementById('history-panel');
+_histPanel.addEventListener('mousedown', e=>e.stopPropagation());
+_histPanel.addEventListener('touchstart', e=>e.stopPropagation(), {passive:false});
+_histPanel.addEventListener('wheel', e=>e.stopPropagation());
+
+// ═══════════════════════════════════════════════════
+//  SHARE — canvas snapshot download
+// ═══════════════════════════════════════════════════
+document.getElementById('btn-share').addEventListener('click', async ()=>{
+  // Composite canvas + UI text onto an offscreen canvas
+  const W2=canvas.width, H2=canvas.height;
+  const off = document.createElement('canvas');
+  off.width = W2; off.height = H2;
+  const oc = off.getContext('2d');
+
+  // Copy main canvas
+  oc.drawImage(canvas, 0, 0);
+
+  // Overlay exhibit text
+  const name = document.getElementById('sn').textContent;
+  const interp = document.getElementById('diag-l1').textContent || document.getElementById('interpretation').textContent;
+  const dateStr = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+
+  oc.fillStyle = 'rgba(0,0,0,0.38)';
+  oc.fillRect(0, H2-110, W2, 110);
+
+  oc.font = 'italic 22px Georgia, serif';
+  oc.fillStyle = 'rgba(255,255,255,0.82)';
+  oc.fillText(name, 32, H2-76);
+
+  oc.font = '10px monospace';
+  oc.fillStyle = 'rgba(255,255,255,0.32)';
+  oc.fillText('DREAM BIOLOGY · ' + dateStr, 32, H2-54);
+
+  if(interp){
+    oc.font = 'italic 12px Georgia, serif';
+    oc.fillStyle = 'rgba(255,255,255,0.28)';
+    // Wrap text
+    const words = interp.split(' '); let line='', y=H2-33;
+    for(const w of words){
+      const test = line ? line+' '+w : w;
+      if(oc.measureText(test).width > W2-64 && line){
+        oc.fillText(line, 32, y); line=w; y+=16;
+      } else { line=test; }
+    }
+    if(line) oc.fillText(line, 32, y);
+  }
+
+  // Download
+  const link = document.createElement('a');
+  link.download = `dream-biology-${Date.now()}.png`;
+  link.href = off.toDataURL('image/png');
+  link.click();
+
+  // Toast
+  const toast = document.getElementById('share-toast');
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'), 2400);
+});
+
+// ═══════════════════════════════════════════════════
+//  ECHO MODE — blend current + memory baseline
+// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
+//  DETECTED SIGNALS RENDER
+// ═══════════════════════════════════════════════════
+function _renderDetectedSignals(signals){
+  const wrap = document.getElementById('detected-signals');
+  const list = document.getElementById('ds-list');
+  if(!signals || signals.length === 0){ wrap.style.display='none'; return; }
+  list.innerHTML = '';
+  signals.slice(0,4).forEach(sig => {
+    const row = document.createElement('div');
+    row.className = 'ds-row';
+    row.innerHTML = `<span class="ds-input">${sig.input}</span><span class="ds-arrow">→</span><span class="ds-effect">${sig.effect}</span>`;
+    list.appendChild(row);
+  });
+  wrap.style.display = 'block';
+  // Stagger fade-in
+  wrap.style.opacity = '0';
+  wrap.style.transition = 'opacity .5s ease';
+  setTimeout(()=>{ wrap.style.opacity='1'; }, 600);
+}
+
+// Echo mode tooltip (first use)
+let _echoShownTip = false;
+document.getElementById('btn-echo').addEventListener('click', ()=>{
+  _echoActive = !_echoActive;
+  const btn = document.getElementById('btn-echo');
+  const badge = document.getElementById('echo-badge');
+  if(_echoActive){
+    _echoD=D; _echoR=R; _echoS=S; _echoHRV=HRV;
+    _echoTEMP=TEMP; _echoONSET=ONSET; _echoWAKE=WAKE; _echoSTEPS=STEPS;
+    const em = 0.5;
+    D = D*(1-em)+MEM.d*em; R = R*(1-em)+MEM.r*em; S = S*(1-em)+MEM.s*em;
+    HRV = HRV*(1-em)+MEM.hrv*em; TEMP = TEMP*(1-em)+MEM.temp*em;
+    ONSET = ONSET*(1-em)+MEM.onset*em; WAKE = WAKE*(1-em)+MEM.wake*em;
+    STEPS = STEPS*(1-em)+MEM.steps*em;
+    btn.textContent = '◈ echo off';
+    btn.style.borderColor = 'rgba(148,88,205,.45)';
+    btn.style.color = 'rgba(195,155,248,.75)';
+    badge.classList.add('visible');
+    // Show tooltip on first use
+    if(!_echoShownTip){
+      _echoShownTip = true;
+      const tip = document.getElementById('echo-tip');
+      if(tip){ tip.classList.add('visible'); setTimeout(()=>tip.classList.remove('visible'), 3200); }
+    }
+  } else {
+    D=_echoD; R=_echoR; S=_echoS; HRV=_echoHRV;
+    TEMP=_echoTEMP; ONSET=_echoONSET; WAKE=_echoWAKE; STEPS=_echoSTEPS;
+    btn.textContent = '◈ echo mode';
+    btn.style.borderColor = ''; btn.style.color = '';
+    badge.classList.remove('visible');
+  }
+  [['d','dv',D],['r','rv',R],['s','sv',S],['h','hv',HRV],
+   ['t','tv',TEMP],['o','ov',ONSET],['w','wv',WAKE],['a','av',STEPS]
+  ].forEach(([sid,vid,val])=>{
+    const se=document.getElementById(sid); if(se) se.value=val;
+    const ve=document.getElementById(vid); if(ve) ve.textContent=val.toFixed(2);
+  });
+});
+</script>
+</body>
+</html>
