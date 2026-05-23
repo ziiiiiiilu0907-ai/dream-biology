@@ -381,6 +381,105 @@
     white-space:nowrap;
   }
   #echo-tip.visible{opacity:1;}
+
+  /* ── MOBILE RESPONSIVE PATCH (max-width: 700px) ─────── */
+  @media (max-width: 700px) {
+
+    /* 1. LANDING SCREEN */
+    .fs-content {
+      width: 88vw;
+      max-width: 360px;
+    }
+    .fs-big-title {
+      font-size: clamp(44px, 13vw, 64px);
+      white-space: normal;
+      text-align: center;
+      line-height: 0.95;
+    }
+    .fs-tagline {
+      font-size: clamp(15px, 4.5vw, 20px);
+      white-space: normal;
+      max-width: 88vw;
+    }
+    .fs-tagline-sub {
+      max-width: 82vw;
+    }
+    .fs-btn-primary,
+    .fs-btn-secondary {
+      width: 88vw;
+      max-width: 88vw;
+    }
+
+    /* 2. ORGANISM READING OVERLAY */
+    .exhibit {
+      top: 28px;
+      left: 22px;
+      right: 22px;
+      max-width: none;
+      max-height: 68vh;
+      overflow-y: auto;
+      padding-bottom: 16px;
+      pointer-events: auto;
+      background: linear-gradient(to bottom, rgba(0,0,0,.58), rgba(0,0,0,.22), rgba(0,0,0,0));
+      border-radius: 8px;
+      padding: 10px 10px 20px;
+    }
+    .ex-title {
+      font-size: clamp(28px, 9vw, 42px);
+    }
+    .ex-title-row {
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .ex-back-btn {
+      transform: scale(0.88);
+      transform-origin: top right;
+    }
+    .ex-state .sn {
+      font-size: clamp(22px, 7vw, 34px);
+    }
+    .ex-state .sp {
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    .diag-l1 {
+      font-size: 18px;
+      line-height: 1.55;
+    }
+    .diag-l2 {
+      font-size: 13px;
+      line-height: 1.65;
+    }
+    .ds-row {
+      flex-wrap: wrap;
+      gap: 4px;
+      font-size: 12px;
+    }
+    .metric-row {
+      padding-left: 4px;
+    }
+
+    /* 3. BOTTOM CONTROLS */
+    .hint {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #action-bar {
+      bottom: max(84px, calc(env(safe-area-inset-bottom) + 72px));
+      right: 18px;
+    }
+    .action-btn {
+      font-size: 8px;
+      letter-spacing: .16em;
+    }
+    #panel-tab,
+    #panel-close-tab {
+      bottom: max(84px, calc(env(safe-area-inset-bottom) + 72px));
+      left: 18px;
+      max-width: 42vw;
+      white-space: nowrap;
+    }
+  }
 </style>
 </head>
 <body>
@@ -541,7 +640,7 @@ let W, H, CX, CY;
 function resize(){
   W = canvas.width  = window.innerWidth;
   H = canvas.height = window.innerHeight;
-  CX = W/2; CY = H * .42;
+  CX = W/2; CY = window.innerWidth < 700 ? H * .56 : H * .42;
 }
 resize();
 window.addEventListener('resize', resize);
