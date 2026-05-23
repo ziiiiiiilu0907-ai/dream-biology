@@ -382,10 +382,14 @@
   }
   #echo-tip.visible{opacity:1;}
 
+  /* Base: hide mobile-only elements on desktop */
+  #mobile-reading-sheet { display: none; }
+  #mobile-read-btn      { display: none; }
+
   /* ── MOBILE RESPONSIVE PATCH (max-width: 700px) ─────── */
   @media (max-width: 700px) {
 
-    /* 1. LANDING SCREEN */
+    /* ── LANDING SCREEN ────────────────────────────────── */
     .fs-content {
       width: 88vw;
       max-width: 360px;
@@ -410,22 +414,21 @@
       max-width: 88vw;
     }
 
-    /* 2. ORGANISM READING OVERLAY */
+    /* ── EXHIBIT: clean top overlay, minimal identity ──── */
     .exhibit {
-      top: 28px;
-      left: 22px;
-      right: 22px;
+      top: 24px;
+      left: 24px;
+      right: 24px;
       max-width: none;
-      max-height: 68vh;
-      overflow-y: auto;
-      padding-bottom: 16px;
+      max-height: none;
+      overflow: visible;
+      background: linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,.12), rgba(0,0,0,0));
+      border-radius: 0;
+      padding: 8px 4px 40px;
       pointer-events: auto;
-      background: linear-gradient(to bottom, rgba(0,0,0,.58), rgba(0,0,0,.22), rgba(0,0,0,0));
-      border-radius: 8px;
-      padding: 10px 10px 20px;
     }
     .ex-title {
-      font-size: clamp(28px, 9vw, 42px);
+      font-size: clamp(30px, 10vw, 44px);
     }
     .ex-title-row {
       align-items: flex-start;
@@ -436,48 +439,170 @@
       transform-origin: top right;
     }
     .ex-state .sn {
-      font-size: clamp(22px, 7vw, 34px);
+      font-size: clamp(24px, 8vw, 36px);
     }
     .ex-state .sp {
       font-size: 13px;
       line-height: 1.7;
     }
-    .diag-l1 {
-      font-size: 18px;
-      line-height: 1.55;
-    }
-    .diag-l2 {
-      font-size: 13px;
-      line-height: 1.65;
-    }
-    .ds-row {
-      flex-wrap: wrap;
-      gap: 4px;
-      font-size: 12px;
-    }
-    .metric-row {
-      padding-left: 4px;
+    /* Hide detailed reading from main overlay — lives in sheet */
+    .exhibit #diagnosis,
+    .exhibit #detected-signals,
+    .exhibit #interpretation {
+      display: none !important;
     }
 
-    /* 3. BOTTOM CONTROLS */
-    .hint {
+    /* ── READ ORGANISM BUTTON ────────────────────────── */
+    #mobile-read-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 18px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.45);
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      padding: 8px 16px;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: background .2s, color .2s;
       opacity: 0;
       pointer-events: none;
     }
+    #mobile-read-btn.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #mobile-read-btn:active {
+      background: rgba(255,255,255,.12);
+      color: rgba(255,255,255,.75);
+    }
+
+    /* ── MOBILE READING BOTTOM SHEET ─────────────────── */
+    #mobile-reading-sheet {
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      height: 62vh;
+      background: rgba(3,3,18,.94);
+      border-top: 1px solid rgba(255,255,255,.1);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      transform: translateY(100%);
+      transition: transform .35s ease;
+      z-index: 80;
+      overflow-y: auto;
+      padding: 24px 24px calc(30px + env(safe-area-inset-bottom));
+    }
+    #mobile-reading-sheet.open {
+      transform: translateY(0);
+    }
+    .mrs-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      padding-bottom: 12px;
+      flex-shrink: 0;
+    }
+    .mrs-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: .2em;
+      color: rgba(255,255,255,.28);
+      text-transform: uppercase;
+    }
+    #mrs-close {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,.22);
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      cursor: pointer;
+      padding: 0;
+      transition: color .2s;
+    }
+    #mrs-close:active { color: rgba(255,255,255,.65); }
+    .mrs-section-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 7px;
+      letter-spacing: .2em;
+      color: rgba(255,255,255,.18);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    #mrs-l1 {
+      font-family: 'EB Garamond', serif;
+      font-style: italic;
+      font-size: 20px;
+      color: rgba(255,255,255,.82);
+      line-height: 1.5;
+      margin-bottom: 22px;
+    }
+    #mrs-l2 {
+      font-family: 'EB Garamond', serif;
+      font-style: italic;
+      font-size: 14px;
+      color: rgba(255,255,255,.36);
+      line-height: 1.75;
+      margin-bottom: 22px;
+    }
+    #mrs-signals-wrap { margin-bottom: 8px; }
+    .mrs-sig-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      font-family: 'EB Garamond', serif;
+      font-style: italic;
+      font-size: 13px;
+      color: rgba(255,255,255,.34);
+      padding: 3px 0;
+      line-height: 1.7;
+    }
+    .mrs-sig-arrow {
+      font-style: normal;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      color: rgba(255,255,255,.14);
+      margin: 0 5px;
+    }
+    .mrs-sig-effect { color: rgba(255,255,255,.2); }
+
+    /* ── HORIZONTAL BOTTOM ACTION BAR ───────────────── */
+    .hint { display: none; }
     #action-bar {
-      bottom: max(84px, calc(env(safe-area-inset-bottom) + 72px));
+      position: fixed;
+      left: 18px;
       right: 18px;
+      bottom: max(22px, calc(env(safe-area-inset-bottom) + 18px));
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0;
+      background: rgba(0,0,0,.42);
+      border: 1px solid rgba(255,255,255,.08);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      padding: 10px 16px;
+      border-radius: 999px;
+      width: auto;
     }
     .action-btn {
       font-size: 8px;
-      letter-spacing: .16em;
+      letter-spacing: .12em;
     }
+
+    /* ── HIDE EXPLORE PANEL TABS ─────────────────────── */
     #panel-tab,
     #panel-close-tab {
-      bottom: max(84px, calc(env(safe-area-inset-bottom) + 72px));
-      left: 18px;
-      max-width: 42vw;
-      white-space: nowrap;
+      display: none !important;
     }
   }
 </style>
@@ -552,6 +677,9 @@
   </div>
   <div class="ex-mem" id="ex-mem"></div>
 
+  <!-- MOBILE-ONLY: open reading sheet -->
+  <button id="mobile-read-btn">↑ read organism</button>
+
   <!-- THREE-LAYER DIAGNOSIS -->
   <div class="diagnosis" id="diagnosis" style="display:none;">
 
@@ -618,6 +746,26 @@
   <button class="action-btn" id="btn-echo">◈ echo mode</button>
 </div>
 
+<!-- ══ MOBILE READING SHEET ══════════════════════ -->
+<div id="mobile-reading-sheet">
+  <div class="mrs-header">
+    <span class="mrs-title">Organism Reading</span>
+    <button id="mrs-close">close</button>
+  </div>
+  <div>
+    <div class="mrs-section-label">emotional read</div>
+    <div id="mrs-l1"></div>
+  </div>
+  <div>
+    <div class="mrs-section-label">biological translation</div>
+    <div id="mrs-l2"></div>
+  </div>
+  <div id="mrs-signals-wrap" style="display:none;">
+    <div class="mrs-section-label">detected signals</div>
+    <div id="mrs-signals"></div>
+  </div>
+</div>
+
 <!-- ══ HISTORY PANEL ══════════════════════════════ -->
 <div id="history-panel">
   <div class="hist-hd">
@@ -640,7 +788,7 @@ let W, H, CX, CY;
 function resize(){
   W = canvas.width  = window.innerWidth;
   H = canvas.height = window.innerHeight;
-  CX = W/2; CY = window.innerWidth < 700 ? H * .56 : H * .42;
+  CX = W/2; CY = window.innerWidth < 700 ? H * .58 : H * .42;
 }
 resize();
 window.addEventListener('resize', resize);
@@ -1833,6 +1981,9 @@ function _renderDiagnosis(p, params){
     setTimeout(()=>l2.classList.add('revealed'), 260);
     setTimeout(()=>tog.classList.add('revealed'), 420);
   });
+
+  // Sync to mobile reading sheet
+  setTimeout(()=>_updateMobileSheet(), 500);
 }
 
 // Metrics toggle
@@ -2091,6 +2242,9 @@ function _renderDetectedSignals(signals){
   wrap.style.opacity = '0';
   wrap.style.transition = 'opacity .5s ease';
   setTimeout(()=>{ wrap.style.opacity='1'; }, 600);
+
+  // Sync to mobile reading sheet
+  setTimeout(()=>_updateMobileSheet(), 700);
 }
 
 // Echo mode tooltip (first use)
@@ -2131,6 +2285,60 @@ document.getElementById('btn-echo').addEventListener('click', ()=>{
     const ve=document.getElementById(vid); if(ve) ve.textContent=val.toFixed(2);
   });
 });
+
+// ═══════════════════════════════════════════════════
+//  MOBILE READING SHEET
+// ═══════════════════════════════════════════════════
+function _updateMobileSheet(){
+  if(window.innerWidth >= 700) return;
+
+  // Sync text content from existing diagnosis elements
+  const l1El = document.getElementById('diag-l1');
+  const l2El = document.getElementById('diag-l2');
+  const mrsL1 = document.getElementById('mrs-l1');
+  const mrsL2 = document.getElementById('mrs-l2');
+  if(mrsL1 && l1El) mrsL1.textContent = l1El.textContent;
+  if(mrsL2 && l2El) mrsL2.textContent = l2El.textContent;
+
+  // Sync detected signals
+  const dsList = document.getElementById('ds-list');
+  const mrsSignals = document.getElementById('mrs-signals');
+  const mrsSignalsWrap = document.getElementById('mrs-signals-wrap');
+  if(mrsSignals && dsList){
+    mrsSignals.innerHTML = '';
+    const rows = dsList.querySelectorAll('.ds-row');
+    if(rows.length > 0){
+      rows.forEach(row => {
+        const div = document.createElement('div');
+        div.className = 'mrs-sig-row';
+        const inp = row.querySelector('.ds-input') ? row.querySelector('.ds-input').textContent : '';
+        const eff = row.querySelector('.ds-effect') ? row.querySelector('.ds-effect').textContent : '';
+        div.innerHTML = '<span>'+inp+'</span><span class="mrs-sig-arrow">→</span><span class="mrs-sig-effect">'+eff+'</span>';
+        mrsSignals.appendChild(div);
+      });
+      if(mrsSignalsWrap) mrsSignalsWrap.style.display = 'block';
+    } else {
+      if(mrsSignalsWrap) mrsSignalsWrap.style.display = 'none';
+    }
+  }
+
+  // Show the "read organism" button once content is ready
+  const readBtn = document.getElementById('mobile-read-btn');
+  if(readBtn) readBtn.classList.add('visible');
+}
+
+// Wire open / close
+(function(){
+  const readBtn = document.getElementById('mobile-read-btn');
+  const sheet   = document.getElementById('mobile-reading-sheet');
+  const closeBtn = document.getElementById('mrs-close');
+  if(readBtn && sheet){
+    readBtn.addEventListener('click', function(){ sheet.classList.add('open'); });
+  }
+  if(closeBtn && sheet){
+    closeBtn.addEventListener('click', function(){ sheet.classList.remove('open'); });
+  }
+})();
 </script>
 </body>
 </html>
