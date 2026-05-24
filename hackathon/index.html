@@ -9,25 +9,26 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:#000;color:#fff;font-family:'Space Mono',monospace;overflow:hidden;}
 
-  /* ── BOOT GUARD: zero-flash on first paint ─────────
-     Applied via <body class="booting">.
-     • Kills ALL transitions so nothing can animate in before JS runs.
-     • Locks the landing screen to fully visible.
-     • Locks every app element to fully hidden.
-     Removed synchronously by JS before draw() starts.          */
-  body.booting *                   { transition: none !important; animation: none !important; }
-  body.booting .wrap,
-  body.booting #c,
-  body.booting .exhibit,
-  body.booting .hint,
-  body.booting #action-bar,
-  body.booting #panel-tab,
-  body.booting #panel-close-tab,
-  body.booting #mobile-read-btn,
-  body.booting #mobile-reading-sheet,
-  body.booting #echo-badge,
-  body.booting #echo-tip            { opacity: 0 !important; pointer-events: none !important; }
-  body.booting #screen-landing      { opacity: 1 !important; display: flex !important; }
+  /* ── PRELOAD GUARD: page stays black until JS routing is ready ──
+     Applied via <body class="preload">.
+     • Kills ALL transitions/animations — nothing can flash in before JS.
+     • Hides every visible element including the landing overlay, so the
+       first paint is a clean black screen.
+     • Removed via double-rAF after all startup routing is wired, at which
+       point CSS transitions re-enable and the landing fades in normally.  */
+  body.preload *                    { transition: none !important; animation: none !important; }
+  body.preload .fs-overlay,
+  body.preload .wrap,
+  body.preload #c,
+  body.preload .exhibit,
+  body.preload .hint,
+  body.preload #action-bar,
+  body.preload #panel-tab,
+  body.preload #panel-close-tab,
+  body.preload #mobile-read-btn,
+  body.preload #mobile-reading-sheet,
+  body.preload #echo-badge,
+  body.preload #echo-tip             { opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
 
   .wrap{display:flex;width:100vw;height:100vh;align-items:center;justify-content:center;position:relative;opacity:0;transition:opacity .4s ease;}
   #c{display:block;position:absolute;top:0;left:0;opacity:0;transition:opacity .6s ease;}
@@ -167,8 +168,9 @@
     z-index:200;
     transition:opacity .4s ease;
   }
-  /* Landing is the default-visible overlay; pin it to 1 so no transition fires on first paint */
-  #screen-landing{ opacity:1; }
+  /* Landing starts hidden; revealed by body.ready after fonts load */
+  #screen-landing{ opacity:0; visibility:hidden; }
+  body.ready #screen-landing{ opacity:1; visibility:visible; }
   .fs-content{
     display:flex;flex-direction:column;
     align-items:center;gap:16px;
@@ -630,7 +632,7 @@
   }
 </style>
 </head>
-<body class="booting">
+<body class="preload">
 
 <!-- ══ LANDING SCREEN ══════════════════════════════════ -->
 <div id="screen-landing" class="fs-overlay">
@@ -1666,11 +1668,6 @@ updateMemUI(); updateState();
   proto.addEventListener('wheel', e => e.stopPropagation());
 })();
 
-// Remove boot guard — first paint is done, transitions can re-enable.
-// Canvas and app elements remain visually hidden via their own opacity:0 CSS;
-// they'll only show when _revealApp() is called after the ritual flow.
-document.body.classList.remove('booting');
-
 draw();
 
 // ═══════════════════════════════════════════════════
@@ -1784,6 +1781,27 @@ document.getElementById('btn-grow').addEventListener('click', ()=>{
     _runGrow(desc);
   });
 });
+
+// ── Release preload: wait for fonts, then fade in landing ────────────────
+// font-display:swap means browsers render text in a fallback font first,
+// then swap to EB Garamond / Space Mono — creating the ghost flash.
+// document.fonts.ready resolves once all fonts are loaded/swapped, so we
+// hold the black screen until that moment (max 1600 ms safety timeout).
+async function _releasePreloadWhenReady(){
+  try {
+    if(document.fonts && document.fonts.ready){
+      await Promise.race([
+        document.fonts.ready,
+        new Promise(resolve => setTimeout(resolve, 1600))
+      ]);
+    }
+  } catch(e) {}
+  requestAnimationFrame(() => {
+    document.body.classList.remove('preload');
+    document.body.classList.add('ready');
+  });
+}
+_releasePreloadWhenReady();
 
 // ── Shared organism-grow pipeline
 async function _runGrow(desc){
