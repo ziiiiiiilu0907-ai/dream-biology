@@ -8,6 +8,27 @@
   @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Space+Mono:wght@400&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:#000;color:#fff;font-family:'Space Mono',monospace;overflow:hidden;}
+
+  /* ── BOOT GUARD: zero-flash on first paint ─────────
+     Applied via <body class="booting">.
+     • Kills ALL transitions so nothing can animate in before JS runs.
+     • Locks the landing screen to fully visible.
+     • Locks every app element to fully hidden.
+     Removed synchronously by JS before draw() starts.          */
+  body.booting *                   { transition: none !important; animation: none !important; }
+  body.booting .wrap,
+  body.booting #c,
+  body.booting .exhibit,
+  body.booting .hint,
+  body.booting #action-bar,
+  body.booting #panel-tab,
+  body.booting #panel-close-tab,
+  body.booting #mobile-read-btn,
+  body.booting #mobile-reading-sheet,
+  body.booting #echo-badge,
+  body.booting #echo-tip            { opacity: 0 !important; pointer-events: none !important; }
+  body.booting #screen-landing      { opacity: 1 !important; display: flex !important; }
+
   .wrap{display:flex;width:100vw;height:100vh;align-items:center;justify-content:center;position:relative;opacity:0;transition:opacity .4s ease;}
   #c{display:block;position:absolute;top:0;left:0;opacity:0;transition:opacity .6s ease;}
   .hint{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,.15);letter-spacing:.15em;z-index:10;pointer-events:none;opacity:0;transition:opacity .4s ease;}
@@ -146,6 +167,8 @@
     z-index:200;
     transition:opacity .4s ease;
   }
+  /* Landing is the default-visible overlay; pin it to 1 so no transition fires on first paint */
+  #screen-landing{ opacity:1; }
   .fs-content{
     display:flex;flex-direction:column;
     align-items:center;gap:16px;
@@ -607,7 +630,7 @@
   }
 </style>
 </head>
-<body>
+<body class="booting">
 
 <!-- ══ LANDING SCREEN ══════════════════════════════════ -->
 <div id="screen-landing" class="fs-overlay">
@@ -789,6 +812,8 @@ function resize(){
   W = canvas.width  = window.innerWidth;
   H = canvas.height = window.innerHeight;
   CX = W/2; CY = window.innerWidth < 700 ? H * .58 : H * .42;
+  // Ensure canvas starts blank — prevents old frame bleed on mobile repaint
+  ctx.clearRect(0, 0, W, H);
 }
 resize();
 window.addEventListener('resize', resize);
@@ -1640,6 +1665,11 @@ updateMemUI(); updateState();
   proto.addEventListener('touchstart', e => e.stopPropagation(), {passive: false});
   proto.addEventListener('wheel', e => e.stopPropagation());
 })();
+
+// Remove boot guard — first paint is done, transitions can re-enable.
+// Canvas and app elements remain visually hidden via their own opacity:0 CSS;
+// they'll only show when _revealApp() is called after the ritual flow.
+document.body.classList.remove('booting');
 
 draw();
 
